@@ -23,8 +23,7 @@ MindMate is a **Flutter-based Voice User Interface (VUI) application** designed 
 ## 📚 Course & Assignment
 
 **Course**: SWST 44042 - Speech Interfaces (2023/2024)  
-**Assessment**: Continuous Assessment / Group Work (40%)  
-**Due Date**: 09/05/2026
+**Assessment**: Continuous Assessment - Group Work
 
 ---
 
