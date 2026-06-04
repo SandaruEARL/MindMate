@@ -7,6 +7,8 @@ PODS:
     - Flutter
   - flutter_tts (0.0.1):
     - Flutter
+  - permission_handler_apple (9.3.0):
+    - Flutter
   - speech_to_text (7.2.0):
     - CwlCatchException
     - Flutter
@@ -16,6 +18,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - speech_to_text (from `.symlinks/plugins/speech_to_text/darwin`)
 
 SPEC REPOS:
@@ -30,6 +33,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_tts:
     :path: ".symlinks/plugins/flutter_tts/ios"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
   speech_to_text:
     :path: ".symlinks/plugins/speech_to_text/darwin"
 
@@ -39,6 +44,7 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_native_splash: c32d145d68aeda5502d5f543ee38c192065986cf
   flutter_tts: 35ac3c7d42412733e795ea96ad2d7e05d0a75113
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   speech_to_text: 3b313d98516d3d0406cea424782ec25470c59d19
 
 PODFILE CHECKSUM: 1857a7cdb7dfafe45f2b0e9a9af44644190f7506
