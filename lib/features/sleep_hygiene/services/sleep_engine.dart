@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/constants/sleep_content.dart';
+import 'gemini_service.dart';
 import 'speech_to_text_service.dart';
 import 'tts_service.dart';
 
@@ -30,6 +31,7 @@ class SleepEngine {
   SleepIntent? _previousIntent;
   String _lastResponse = '';
   final List<IntentLog> _intentLog = [];
+
 
   // Public accessors for debug
   List<IntentLog> get intentLog => List.unmodifiable(_intentLog);
@@ -63,7 +65,7 @@ class SleepEngine {
     // 2. Handoff check
     final handoff = _checkHandoff(text);
     if (handoff != null) {
-      final msg = _handoffMessage(handoff);
+      final msg = handoffMessage(handoff);
       _log(input, SleepIntent.unknown, 1.0, EmotionalTone.neutral);
       return SleepResponse(
         intent: SleepIntent.unknown,
@@ -304,7 +306,7 @@ class SleepEngine {
     );
   }
 
-  String _handoffMessage(String route) {
+  String handoffMessage(String route) {
     switch (route) {
       case '/breathing':
         return 'That sounds like it would be better handled in the '
@@ -400,9 +402,10 @@ class SleepVuiState {
 class SleepVuiNotifier extends StateNotifier<SleepVuiState> {
   final SleepEngine _engine;
   final SpeechToTextService _stt;
+  final GeminiService _gemini;
   final TtsService _tts;
 
-  SleepVuiNotifier(this._engine, this._stt, this._tts)
+  SleepVuiNotifier(this._engine, this._stt, this._gemini, this._tts)
       : super(const SleepVuiState()) {
     _init();
   }
@@ -486,7 +489,36 @@ class SleepVuiNotifier extends StateNotifier<SleepVuiState> {
         .withMessage(ChatMessage(isUser: true, text: input))
         .copyWith(status: SleepVuiStatus.processing, clearCards: true);
 
-    final engineResponse = _engine.process(input);
+    SleepResponse engineResponse = _engine.process(input);
+
+    if (engineResponse.intent == SleepIntent.unknown &&
+        engineResponse.confidence < 0.1) {
+      final geminiReply = await _gemini.chat(input);
+
+      if (geminiReply == 'CRISIS') {
+        engineResponse = SleepResponse(
+          intent: SleepIntent.unknown,
+          message: 'This sounds serious. Your safety comes first. '
+              'I am connecting you to crisis support now.',
+          isCrisis: true,
+          confidence: 1.0,
+        );
+      } else if (geminiReply.startsWith('HANDOFF:')) {
+        final route = geminiReply.replaceFirst('HANDOFF:', '');
+        engineResponse = SleepResponse(
+          intent: SleepIntent.unknown,
+          message: _engine.handoffMessage(route), // see note below
+          handoffRoute: route,
+          confidence: 1.0,
+        );
+      } else {
+        engineResponse = SleepResponse(
+          intent: SleepIntent.unknown,
+          message: geminiReply,
+          confidence: 1.0,
+        );
+      }
+    }
 
     // Navigation: crisis or handoff
     if (engineResponse.isCrisis || engineResponse.handoffRoute != null) {
@@ -547,11 +579,15 @@ Provider<TtsService>((_) => TtsService());
 final sleepEngineProvider =
 Provider<SleepEngine>((_) => SleepEngine());
 
+final geminiServiceProvider =
+Provider<GeminiService>((_) => GeminiService());
+
 final sleepVuiNotifierProvider =
 StateNotifierProvider<SleepVuiNotifier, SleepVuiState>(
       (ref) => SleepVuiNotifier(
     ref.read(sleepEngineProvider),
     ref.read(speechToTextServiceProvider),
+        ref.read(geminiServiceProvider),
     ref.read(ttsServiceProvider),
   ),
 );
