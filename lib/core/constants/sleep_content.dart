@@ -72,12 +72,14 @@ class ChatMessage {
   final DateTime timestamp;
   final SleepIntent? intent;
   final double? confidence;
+  final bool isNew;
 
   ChatMessage({
     required this.isUser,
     required this.text,
     this.intent,
     this.confidence,
+    this.isNew = false,
   }) : timestamp = DateTime.now();
 }
 
@@ -117,8 +119,8 @@ class SleepCorpus {
 
   // ── Crisis ───────────────────────────────────────────────────
   static const List<String> crisisKeywords = [
-    "don't want to wake up", "dont want to wake up", "never wake up",
-    "sleep forever", "wish i wouldn't wake", "wish i wouldnt wake",
+    "don't want to wake up", "don't want to wake up", "never wake up",
+    "sleep forever", "wish i wouldn't wake", "wish i wouldn't wake",
     "not wake up", "sleep and not wake", "go to sleep forever",
   ];
 
@@ -162,18 +164,22 @@ class SleepCorpus {
       'hi', 'hello', 'hey', 'good morning', 'good evening',
       'good night', 'howdy', 'what\'s up', 'whats up', 'greetings',
       'sup', 'hiya',
+      'how are you', 'how are u', 'how r you', 'how r u',
     ],
 
     SleepIntent.gratitude: [
       'thanks', 'thank you', 'thank you so much', 'cheers',
       'appreciate it', 'appreciate that', 'helpful', 'that helped',
       'that was helpful', 'great help',
+      'i like you', 'love this', 'you\'re great', 'you are great',
+      'you\'re helpful', 'you are helpful', 'you\'re amazing',
+      'you are amazing', 'good job', 'well done',
     ],
 
     SleepIntent.repeat: [
       'repeat', 'repeat that', 'say again', 'say that again',
       'what did you say', 'pardon', 'come again', 'once more',
-      'can you repeat', 'didn\'t catch that', 'didnt catch that',
+      'can you repeat', 'didn\'t catch that', 'didn\'t catch that',
       'missed that', 'one more time',
     ],
 
@@ -200,8 +206,8 @@ class SleepCorpus {
     SleepIntent.cantSleep: [
       "can't sleep", "cant sleep", "cannot sleep", "trouble sleeping",
       "hard to sleep", "difficulty sleeping", "lying awake", "awake all night",
-      "been awake", "no sleep", "couldn't sleep", "couldnt sleep",
-      "couldn't fall asleep", "couldnt fall asleep", "sleepless",
+      "been awake", "no sleep", "couldn't sleep", "couldn't sleep",
+      "couldn't fall asleep", "couldn't fall asleep", "sleepless",
       "sleepless night", "insomnia", "tossing and turning",
       "wake up at night", "waking up at night", "keep waking",
       "waking up middle", "middle of the night", "can't fall asleep",
@@ -209,7 +215,7 @@ class SleepCorpus {
       "restless at night", "sleep won't come", "mind won't stop",
       "mind wont stop", "racing thoughts at night", "wide awake",
       "staring at ceiling", "lying in bed awake", "can't drift off",
-      "sleep deprivation", "no rest", "not rested", "didnt sleep",
+      "sleep deprivation", "no rest", "not rested", "didn't sleep",
       "didn't sleep", "eyes won't close", "hours in bed",
     ],
 
@@ -293,7 +299,7 @@ class SleepCorpus {
 
     SleepIntent.frustrated: [
       "frustrated", "annoyed", "irritated", "fed up", "angry",
-      "this isn't working", "this isnt working", "nothing helps",
+      "this isn't working", "this isn't working", "nothing helps",
       "nothing works", "i give up", "sick of this", "hate this",
       "why can't i sleep", "why cant i sleep", "so annoying",
     ],
@@ -325,10 +331,12 @@ class SleepCorpus {
     SleepIntent.greeting: [
       "Hello! I'm your sleep assistant. You can ask me about bedtime routines, "
           "why you can't sleep, screen time habits, naps, or general sleep tips.",
-      "Hey there! Ready to help with your sleep. What's on your mind — "
+      "Hey there! Ready to help with your sleep. What's on your mind, "
           "trouble falling asleep, a bedtime routine, or something else?",
       "Hi! I'm here to help you sleep better. Ask me anything about sleep hygiene, "
           "routines, naps, or what to do when your mind won't switch off.",
+      "Doing well, thanks for asking! What sleep question can I help you with tonight?",
+      "I'm here and ready! What's going on with your sleep?",
     ],
 
     SleepIntent.gratitude: [
@@ -336,6 +344,8 @@ class SleepCorpus {
       "Glad that helped. Feel free to ask anything else.",
       "Of course! Come back anytime you need sleep support.",
       "Happy to help. Wishing you a restful night.",
+      "That means a lot, I'm here whenever you need sleep support.",
+      "Thank you! Now let's make sure you get a good night's rest.",
     ],
 
     SleepIntent.help: [
@@ -386,7 +396,7 @@ class SleepCorpus {
       "When you're this tired, the right approach matters. Let's sort it out. ",
     ],
     EmotionalTone.frustrated: [
-      "I understand the frustration — it's genuinely hard when sleep doesn't come. ",
+      "I understand the frustration, it's genuinely hard when sleep doesn't come. ",
       "That irritation is completely valid. Let's try a different angle. ",
       "Sleep struggles are exhausting in themselves. Here's something concrete to try. ",
     ],
