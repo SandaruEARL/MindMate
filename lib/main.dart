@@ -15,7 +15,7 @@ class MindMateApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MindMate',
+      title: 'MindMate 2.0',
       debugShowCheckedModeBanner: false,
 
       theme: ThemeData(
