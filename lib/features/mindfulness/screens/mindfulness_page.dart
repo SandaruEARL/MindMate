@@ -34,7 +34,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
   bool _shouldAutoListen = false;
   String _currentState = 'idle'; // 'idle', 'awaiting_meditation_choice', 'awaiting_reflection_response'
   String _detectedEmotion = 'none'; // 'none', 'stress', 'anxiety', 'sleep', 'sad'
-  String _activeTab = 'mindfulness'; // 'mindfulness' or 'guided'
+  String _activeTab = 'chat'; // 'chat' (default), 'mindfulness', or 'guided'
   final List<_Message> _chatHistory = [
     _Message("Hello! I am your Mindfulness VUI guide. Tap the microphone to talk to me, or choose a session below.", isUser: false),
   ];
@@ -534,6 +534,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     setState(() {
       _isPlaying = true;
       _sessionLabel = '$title in progress…';
+      _activeTab = 'chat';
     });
 
     _progressController.duration = duration;
@@ -1061,7 +1062,16 @@ class _MindfulnessPageState extends State<MindfulnessPage>
           Positioned.fill(
             child: SafeArea(
               bottom: false,
-              child: SingleChildScrollView(
+              child: GestureDetector(
+                onTap: () {
+                  if (!_isPlaying && _activeTab != 'chat') {
+                    setState(() {
+                      _activeTab = 'chat';
+                    });
+                  }
+                },
+                behavior: HitTestBehavior.translucent,
+                child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 280),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1077,6 +1087,10 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                 onTap: () {
                                   if (_isPlaying) {
                                     _stopSession();
+                                  } else if (_activeTab != 'chat') {
+                                    setState(() {
+                                      _activeTab = 'chat';
+                                    });
                                   }
                                 },
                                 child: Tooltip(
@@ -1091,25 +1105,14 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                             },
                           ),
                           const SizedBox(height: 16),
-                          if (_isPlaying)
-                            Text(
-                              _sessionLabel,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: cs.onSurface,
-                                fontWeight: FontWeight.w600,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            )
-                          else
+                          if (!_isPlaying)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
-                                      _activeTab = 'mindfulness';
+                                      _activeTab = _activeTab == 'mindfulness' ? 'chat' : 'mindfulness';
                                     });
                                   },
                                   child: AnimatedContainer(
@@ -1151,7 +1154,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
-                                      _activeTab = 'guided';
+                                      _activeTab = _activeTab == 'guided' ? 'chat' : 'guided';
                                     });
                                   },
                                   child: AnimatedContainer(
@@ -1190,55 +1193,94 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                   ),
                                 ),
                               ],
-                            ),
-                          if (_isPlaying) ...[
-                            const SizedBox(height: 10),
-                            AnimatedBuilder(
-                              animation: _progressController,
-                              builder: (context, child) {
-                                final total = _progressController.duration ?? const Duration(minutes: 5);
-                                final elapsed = total * _progressController.value;
-                                final remaining = total - elapsed;
+                            )
+                          else ...[
+                            Builder(
+                              builder: (context) {
+                                Map<String, dynamic>? currentSession;
+                                for (final s in _sessions) {
+                                  if (_sessionLabel.contains(s['title'] as String)) currentSession = s;
+                                }
+                                for (final s in _meditationSessions) {
+                                  if (_sessionLabel.contains(s['title'] as String)) currentSession = s;
+                                }
                                 
-                                final minutes = remaining.inMinutes;
-                                final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+                                if (currentSession == null) return const SizedBox.shrink();
                                 
-                                return TweenAnimationBuilder<double>(
-                                  duration: const Duration(milliseconds: 300),
-                                  tween: Tween(begin: 1.0, end: 1.05),
-                                  builder: (context, scale, child) {
-                                    return Transform.scale(
-                                      scale: scale,
-                                      child: Text(
-                                        '$minutes:$seconds',
-                                        style: TextStyle(
-                                          fontSize: 34,
-                                          fontWeight: FontWeight.w900,
-                                          color: accent,
-                                          letterSpacing: 1.5,
-                                          fontFeatures: const [FontFeature.tabularFigures()],
-                                          shadows: [
-                                            Shadow(
-                                              color: accent.withOpacity(0.25),
-                                              blurRadius: 8.0,
-                                            ),
-                                          ],
+                                final sColor = currentSession['color'] as Color;
+                                
+                                return Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: sColor.withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: sColor,
+                                          width: 2,
                                         ),
                                       ),
-                                    );
-                                  },
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            backgroundColor: sColor.withOpacity(0.15),
+                                            child: Icon(
+                                              currentSession['icon'] as IconData,
+                                              color: sColor,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(currentSession['title'] as String,
+                                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                                                const SizedBox(height: 3),
+                                                Text(currentSession['subtitle'] as String,
+                                                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                                              ],
+                                            ),
+                                          ),
+                                          AnimatedBuilder(
+                                            animation: _progressController,
+                                            builder: (context, child) {
+                                              final total = _progressController.duration ?? const Duration(minutes: 5);
+                                              final elapsed = total * _progressController.value;
+                                              final remaining = total - elapsed;
+                                              
+                                              final minutes = remaining.inMinutes;
+                                              final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+                                              
+                                              return Text(
+                                                '$minutes:$seconds',
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: sColor,
+                                                  letterSpacing: 1.0,
+                                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'TAP PULSING CIRCLE TO STOP',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: cs.onSurfaceVariant.withOpacity(0.4),
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                  ],
                                 );
                               },
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'TAP PULSING CIRCLE TO STOP',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: cs.onSurfaceVariant.withOpacity(0.4),
-                                letterSpacing: 1.0,
-                              ),
                             ),
                           ],
                         ],
@@ -1246,85 +1288,85 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                     ),
                     const SizedBox(height: 24),
 
-                    // ── Conversational Chat Bubbles ───────────────────────────
-                    Container(
-                      height: 180,
-                      margin: const EdgeInsets.only(bottom: 24),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerLowest.withOpacity(0.4),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: cs.outlineVariant.withOpacity(0.3),
+                    // ── CHAT INTERFACE (default, shown when no tab selected) ──
+                    if (_activeTab == 'chat' || _isPlaying) ...[
+                      Container(
+                        height: 180,
+                        margin: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerLowest.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: cs.outlineVariant.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.forum_rounded, size: 16, color: accent),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'VUI Conversation Log',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: cs.onSurfaceVariant.withOpacity(0.8),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: ListView.builder(
+                                reverse: true,
+                                itemCount: _chatHistory.length,
+                                itemBuilder: (context, index) {
+                                  final msg = _chatHistory[_chatHistory.length - 1 - index];
+                                  return Align(
+                                    alignment: msg.isUser
+                                        ? Alignment.centerRight
+                                        : Alignment.centerLeft,
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: msg.isUser
+                                            ? accent.withOpacity(0.15)
+                                            : cs.surfaceContainerHighest.withOpacity(0.6),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: const Radius.circular(12),
+                                          topRight: const Radius.circular(12),
+                                          bottomLeft: Radius.circular(msg.isUser ? 12 : 4),
+                                          bottomRight: Radius.circular(msg.isUser ? 4 : 12),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        msg.text,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: cs.onSurface,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.forum_rounded, size: 16, color: accent),
-                              const SizedBox(width: 6),
-                              Text(
-                                'VUI Conversation Log',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurfaceVariant.withOpacity(0.8),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: ListView.builder(
-                              reverse: true, // Show newest messages at the bottom
-                              itemCount: _chatHistory.length,
-                              itemBuilder: (context, index) {
-                                final msg = _chatHistory[_chatHistory.length - 1 - index];
-                                return Align(
-                                  alignment: msg.isUser
-                                      ? Alignment.centerRight
-                                      : Alignment.centerLeft,
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: msg.isUser
-                                          ? accent.withOpacity(0.15)
-                                          : cs.surfaceContainerHighest.withOpacity(0.6),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: const Radius.circular(12),
-                                        topRight: const Radius.circular(12),
-                                        bottomLeft: Radius.circular(msg.isUser ? 12 : 4),
-                                        bottomRight: Radius.circular(msg.isUser ? 4 : 12),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      msg.text,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: cs.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    ],
 
-                    const SizedBox(height: 16),
-
-                    if (_isPlaying
-                        ? _isSessionInMindfulnessList(_sessionLabel)
-                        : (_activeTab == 'mindfulness')) ...[
+                    // ── MINDFULNESS SESSIONS (shown when mindfulness tab selected) ──
+                    if (!_isPlaying && _activeTab == 'mindfulness') ...[
+                      const SizedBox(height: 16),
                       Text(
                         'Mindfulness Sessions',
                         style: TextStyle(
@@ -1334,13 +1376,10 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // ── Session cards ────────────────────────────────────────
                       ...List.generate(_sessions.length, (i) {
                         final s = _sessions[i];
-                        final isCurrentPlaying = _isPlaying && _sessionLabel.contains(s['title'] as String);
                         return GestureDetector(
-                          onTap: _isPlaying ? null : () {
+                          onTap: () {
                             if (s['title'] == 'Body Scan') {
                               _runBodyScan();
                             } else if (s['title'] == 'Mindful Observation') {
@@ -1356,10 +1395,8 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                               color: (s['color'] as Color).withOpacity(0.08),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: isCurrentPlaying
-                                    ? (s['color'] as Color)
-                                    : (s['color'] as Color).withOpacity(0.2),
-                                width: isCurrentPlaying ? 2 : 1,
+                                color: (s['color'] as Color).withOpacity(0.2),
+                                width: 1,
                               ),
                             ),
                             child: Row(
@@ -1384,28 +1421,26 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                     ],
                                   ),
                                 ),
-                                if (isCurrentPlaying)
-                                  Icon(Icons.volume_up_rounded, color: s['color'] as Color)
-                                else if (!_isPlaying)
-                                  Icon(Icons.play_arrow_rounded, color: (s['color'] as Color).withOpacity(0.5)),
+                                Icon(Icons.play_arrow_rounded, color: (s['color'] as Color).withOpacity(0.5)),
                               ],
                             ),
                           ),
                         );
                       }),
-                    ] else ...[
+                    ],
+
+                    // ── GUIDED MEDITATION SESSIONS (shown when guided tab selected) ──
+                    if (!_isPlaying && _activeTab == 'guided') ...[
+                      const SizedBox(height: 16),
                       Text(
                         'Guided Meditation Sessions 🎧',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface),
                       ),
                       const SizedBox(height: 12),
-
-                      // ── Guided Meditation Sessions ───────────────────────────
                       ...List.generate(_meditationSessions.length, (i) {
                         final s = _meditationSessions[i];
-                        final isCurrentPlaying = _isPlaying && _sessionLabel.contains(s['title'] as String);
                         return GestureDetector(
-                          onTap: _isPlaying ? null : () {
+                          onTap: () {
                             if (s['title'] == 'Beginner Meditation') {
                               _runBeginnerMeditation();
                             } else if (s['title'] == 'Anxiety Reduction') {
@@ -1423,10 +1458,8 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                               color: (s['color'] as Color).withOpacity(0.08),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: isCurrentPlaying
-                                    ? (s['color'] as Color)
-                                    : (s['color'] as Color).withOpacity(0.2),
-                                width: isCurrentPlaying ? 2 : 1,
+                                color: (s['color'] as Color).withOpacity(0.2),
+                                width: 1,
                               ),
                             ),
                             child: Row(
@@ -1451,10 +1484,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                     ],
                                   ),
                                 ),
-                                if (isCurrentPlaying)
-                                  Icon(Icons.volume_up_rounded, color: s['color'] as Color)
-                                else if (!_isPlaying)
-                                  Icon(Icons.play_arrow_rounded, color: (s['color'] as Color).withOpacity(0.5)),
+                                Icon(Icons.play_arrow_rounded, color: (s['color'] as Color).withOpacity(0.5)),
                               ],
                             ),
                           ),
@@ -1463,6 +1493,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                     ],
                   ],
                 ),
+              ),
               ),
             ),
           ),
@@ -1638,8 +1669,8 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
             if (widget.isPlaying) ...[
               // Outer breathing ripple 1
               Container(
-                width: 160 + (60 * _pulseAnimation.value),
-                height: 160 + (60 * _pulseAnimation.value),
+                width: 110 + (45 * _pulseAnimation.value),
+                height: 110 + (45 * _pulseAnimation.value),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: widget.accentColor.withOpacity(0.08 * (1.0 - _pulseAnimation.value)),
@@ -1647,8 +1678,8 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
               ),
               // Inner breathing ripple 2
               Container(
-                width: 160 + (30 * _pulseAnimation.value),
-                height: 160 + (30 * _pulseAnimation.value),
+                width: 110 + (25 * _pulseAnimation.value),
+                height: 110 + (25 * _pulseAnimation.value),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: widget.accentColor.withOpacity(0.12 * (1.0 - _pulseAnimation.value)),
@@ -1661,8 +1692,8 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
               scale: widget.isPlaying ? _scaleAnimation.value : 1.0,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
-                width: 160,
-                height: 160,
+                width: 110,
+                height: 110,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: widget.accentColor.withOpacity(widget.isPlaying ? 0.25 : 0.12),
@@ -1682,7 +1713,7 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
                 ),
                 child: Icon(
                   Icons.self_improvement_rounded,
-                  size: 76,
+                  size: 52,
                   color: widget.accentColor.withOpacity(widget.isPlaying ? 1.0 : 0.6),
                 ),
               ),
@@ -1691,8 +1722,8 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
             // 3. Progress arc surrounding the circle
             if (widget.isPlaying || widget.progress > 0)
               SizedBox(
-                width: 176,
-                height: 176,
+                width: 126,
+                height: 126,
                 child: CustomPaint(
                   painter: _CircularSessionProgressPainter(
                     progress: widget.progress,
