@@ -34,6 +34,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
   bool _shouldAutoListen = false;
   String _currentState = 'idle'; // 'idle', 'awaiting_meditation_choice', 'awaiting_reflection_response'
   String _detectedEmotion = 'none'; // 'none', 'stress', 'anxiety', 'sleep', 'sad'
+  String _activeTab = 'mindfulness'; // 'mindfulness' or 'guided'
   final List<_Message> _chatHistory = [
     _Message("Hello! I am your Mindfulness VUI guide. Tap the microphone to talk to me, or choose a session below.", isUser: false),
   ];
@@ -89,20 +90,6 @@ class _MindfulnessPageState extends State<MindfulnessPage>
       'subtitle': '5 min · Reflect on life\'s gifts',
       'icon': Icons.volunteer_activism_rounded,
       'color': const Color(0xFFEC407A),
-      'duration': const Duration(minutes: 5),
-    },
-    {
-      'title': 'Breathing Exercise',
-      'subtitle': '3 min · 4-4-6 breathing cycles',
-      'icon': Icons.air_rounded,
-      'color': const Color(0xFF00E676),
-      'duration': const Duration(minutes: 3),
-    },
-    {
-      'title': 'Sleep Relaxation',
-      'subtitle': '5 min · Soothing bedtime routine',
-      'icon': Icons.bedtime_rounded,
-      'color': const Color(0xFF7986CB),
       'duration': const Duration(minutes: 5),
     },
   ];
@@ -235,6 +222,13 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     await _tts.speak(response);
   }
 
+  bool _isSessionInMindfulnessList(String label) {
+    for (final s in _sessions) {
+      if (label.contains(s['title'] as String)) return true;
+    }
+    return false;
+  }
+
   Future<void> _handleVoiceCommand(String text) async {
     if (text.isEmpty) {
       setState(() => _statusLabel = "I didn't catch that. Try again.");
@@ -293,18 +287,18 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     // 3. Handle state: choosing meditation option (Turn-taking choice)
     if (_currentState == 'awaiting_meditation_choice') {
       _currentState = 'idle';
-      if (text.contains('breathing') || text.contains('one') || text.contains('first')) {
-        setState(() => _chatHistory.add(_Message('Starting Breathing Exercise…', isUser: false)));
-        await _runBreathingExercise();
-      } else if (text.contains('body') || text.contains('scan') || text.contains('two') || text.contains('second')) {
+      if (text.contains('body') || text.contains('scan') || text.contains('one') || text.contains('first')) {
         setState(() => _chatHistory.add(_Message('Starting Body Scan…', isUser: false)));
         await _runBodyScan();
-      } else if (text.contains('sleep') || text.contains('relaxation') || text.contains('three') || text.contains('third')) {
-        setState(() => _chatHistory.add(_Message('Starting Sleep Relaxation…', isUser: false)));
-        await _runSleepRelaxation();
-      } else if (text.contains('loving') || text.contains('kindness') || text.contains('four') || text.contains('fourth') || text.contains('compassion')) {
+      } else if (text.contains('loving') || text.contains('kindness') || text.contains('two') || text.contains('second') || text.contains('compassion')) {
         setState(() => _chatHistory.add(_Message('Starting Loving Kindness…', isUser: false)));
         await _runLovingKindness();
+      } else if (text.contains('anxiety') || text.contains('three') || text.contains('third') || text.contains('reduction')) {
+        setState(() => _chatHistory.add(_Message('Starting Anxiety Reduction…', isUser: false)));
+        await _runAnxietyReduction();
+      } else if (text.contains('focus') || text.contains('concentration') || text.contains('four') || text.contains('fourth')) {
+        setState(() => _chatHistory.add(_Message('Starting Focus & Concentration…', isUser: false)));
+        await _runFocusConcentration();
       } else {
         // Auto-select based on the detected emotion
         if (_detectedEmotion == 'stress') {
@@ -312,13 +306,13 @@ class _MindfulnessPageState extends State<MindfulnessPage>
           await Future.delayed(const Duration(seconds: 4));
           await _runBodyScan();
         } else if (_detectedEmotion == 'anxiety') {
-          await _speakConversationalResponse('Okay, let\'s practice our Breathing Exercise to calm your anxiety.');
+          await _speakConversationalResponse('Okay, let\'s practice an Anxiety Reduction meditation to calm your mind.');
           await Future.delayed(const Duration(seconds: 4));
-          await _runBreathingExercise();
+          await _runAnxietyReduction();
         } else if (_detectedEmotion == 'sleep') {
-          await _speakConversationalResponse('Okay, let\'s do a Sleep Relaxation session to wind down for bed.');
+          await _speakConversationalResponse('Okay, let\'s do a Loving Kindness session to bring you comfort and rest.');
           await Future.delayed(const Duration(seconds: 4));
-          await _runSleepRelaxation();
+          await _runLovingKindness();
         } else if (_detectedEmotion == 'sad') {
           await _speakConversationalResponse('Okay, let\'s practice a Loving Kindness meditation to bring warmth to your heart.');
           await Future.delayed(const Duration(seconds: 4));
@@ -345,7 +339,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
       _currentState = 'awaiting_meditation_choice';
       await _speakConversationalResponse(
         'I hear that you are feeling anxious right now. Let\'s take a slow breath together. '
-        'Would you like to try a Breathing exercise, a Body scan, or a Sleep relaxation session?'
+        'Would you like to try a Body scan, a Loving Kindness meditation, or an Anxiety Reduction session?'
       );
       return;
     }
@@ -364,7 +358,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
       _currentState = 'awaiting_meditation_choice';
       await _speakConversationalResponse(
         'I hear that things feel heavy right now. Let\'s take a moment together. '
-        'Would you like to try a Body scan, a Breathing exercise, or a Sleep relaxation session?'
+        'Would you like to try a Body scan, a Loving Kindness meditation, or a Focus and Concentration session?'
       );
       return;
     }
@@ -375,7 +369,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
       _currentState = 'awaiting_meditation_choice';
       await _speakConversationalResponse(
         'I hear that you\'re having trouble resting. Let\'s get comfortable. '
-        'Would you like to try our Sleep relaxation, a Breathing exercise, or a Body scan?'
+        'Would you like to try a Body scan, a Loving Kindness meditation, or a Gratitude meditation?'
       );
       return;
     }
@@ -392,7 +386,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
       _currentState = 'awaiting_meditation_choice';
       await _speakConversationalResponse(
         'I\'m sorry that you\'re feeling down right now. You are valued and you are not alone. '
-        'Would you like to practice a Loving Kindness meditation, a Breathing exercise, or a Body scan?'
+        'Would you like to practice a Loving Kindness meditation, a Body scan, or a Gratitude meditation?'
       );
       return;
     }
@@ -473,7 +467,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
 
     if (text.contains('what can i say') || text.contains('features') || text.contains('how does this work') || text.contains('help')) {
       await _speakConversationalResponse(
-        'You can say, "Start Body Scan", "Start Anxiety Reduction", "Start Loving Kindness", or "Start Beginner Meditation". '
+        'You can say, "Start Body Scan", "Start Anxiety Reduction", "Start Loving Kindness", "Start Focus", "Start Gratitude", or "Start Beginner Meditation". '
         'You can also ask questions like, "What is mindfulness?", "How do I manage anxiety?", or say "Go back". '
         'What would you like to do now?'
       );
@@ -502,12 +496,6 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     } else if (text.contains('gratitude') || text.contains('thankful') || text.contains('blessings')) {
       setState(() => _statusLabel = 'Starting Gratitude Meditation…');
       await _runGratitudeMeditation();
-    } else if (text.contains('breathing') || text.contains('air') || text.contains('breath')) {
-      setState(() => _statusLabel = 'Starting Breathing Exercise…');
-      await _runBreathingExercise();
-    } else if (text.contains('sleep') || text.contains('bedtime') || text.contains('relaxation')) {
-      setState(() => _statusLabel = 'Starting Sleep Relaxation…');
-      await _runSleepRelaxation();
     } else if (text.contains('stop') || text.contains('pause') || text.contains('cancel')) {
       setState(() => _statusLabel = 'Stopping practice…');
       await _stopSession();
@@ -521,7 +509,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
       setState(() => _statusLabel = 'Command not recognized. Try saying a session name or "go back".');
       await _tts.speak(
         'I heard "$_recognizedText" but I did not recognize that command. '
-        'Try saying: Body Scan, Mindful Observation, Loving Kindness, Beginner Meditation, Anxiety Reduction, Focus, Gratitude, Breathing Exercise, Sleep Relaxation, Stop, or Go Back.',
+        'Try saying: Body Scan, Mindful Observation, Loving Kindness, Beginner Meditation, Anxiety Reduction, Focus, Gratitude, Stop, or Go Back.',
       );
     }
   }
@@ -1006,89 +994,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     );
   }
 
-  Future<void> _runBreathingExercise() async {
-    await _startSession(
-      title: 'Breathing Exercise',
-      duration: const Duration(minutes: 3),
-      cues: [
-        {
-          'offset': Duration.zero,
-          'text': "Welcome to the Breathing Exercise... Let's practice four four six breathing... We will inhale for four seconds... hold for four... and exhale for six... Get ready... Inhale... two... three... four... Hold... two... three... four... Exhale... two... three... four... five... six.",
-        },
-        {
-          'offset': const Duration(seconds: 25),
-          'text': "Cycle two... Inhale... two... three... four... Hold... two... three... four... Exhale... two... three... four... five... six.",
-        },
-        {
-          'offset': const Duration(seconds: 50),
-          'text': "Feel your body settle... Cycle three... Inhale... two... three... four... Hold... two... three... four... Exhale... two... three... four... five... six.",
-        },
-        {
-          'offset': const Duration(seconds: 75),
-          'text': "Keep it steady... Cycle four... Inhale... two... three... four... Hold... two... three... four... Exhale... two... three... four... five... six.",
-        },
-        {
-          'offset': const Duration(seconds: 100),
-          'text': "Let go of thoughts... Cycle five... Inhale... two... three... four... Hold... two... three... four... Exhale... two... three... four... five... six.",
-        },
-        {
-          'offset': const Duration(seconds: 125),
-          'text': "Breathe naturally now... Feel the calm flowing through your body... Relax.",
-        },
-        {
-          'offset': const Duration(seconds: 150),
-          'text': "Slow, deep breathing triggers your relaxation response... instantly calming your nervous system... Rest in this quiet space.",
-        },
-        {
-          'offset': const Duration(seconds: 170),
-          'text': "Take a final deep breath in... and let it go completely.",
-        },
-      ],
-      playMusic: false,
-    );
-  }
 
-  Future<void> _runSleepRelaxation() async {
-    await _startSession(
-      title: 'Sleep Relaxation',
-      duration: const Duration(minutes: 5),
-      cues: [
-        {
-          'offset': Duration.zero,
-          'text': "Welcome to sleep relaxation... Lie down comfortably... let your eyes close... feel the heavy support of your bed... Let go of the day.",
-        },
-        {
-          'offset': const Duration(seconds: 30),
-          'text': "Let your feet feel heavy... let your legs go completely loose... releasing all tension and weight.",
-        },
-        {
-          'offset': const Duration(seconds: 60),
-          'text': "Feel your chest rise and fall... with a slow... gentle... sleepy rhythm... You have done enough today... it is time to rest.",
-        },
-        {
-          'offset': const Duration(seconds: 90),
-          'text': "Your shoulders sink down... your arms feel heavy and relaxed by your side... breathe in calm... breathe out sleep.",
-        },
-        {
-          'offset': const Duration(seconds: 120),
-          'text': "Relax the muscles in your face... your jaw... your forehead... letting your mind drift into deep quiet.",
-        },
-        {
-          'offset': const Duration(seconds: 150),
-          'text': "With every breath out... you are sinking deeper and deeper... into comfort... and safety.",
-        },
-        {
-          'offset': const Duration(seconds: 180),
-          'text': "There is nothing else you need to do... nowhere else you need to be... just drifting... flowing into sleep.",
-        },
-        {
-          'offset': const Duration(seconds: 210),
-          'text': "Quiet mind... relaxed body... peaceful sleep... Good night.",
-        },
-      ],
-      playMusic: true,
-    );
-  }
 
   Future<void> _stopSession() async {
     _clearGuidanceTimers();
@@ -1156,7 +1062,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
             child: SafeArea(
               bottom: false,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 220),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 280),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1185,16 +1091,106 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                             },
                           ),
                           const SizedBox(height: 16),
-                          Text(
-                            _sessionLabel,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: cs.onSurface,
-                              fontWeight: FontWeight.w600,
-                              fontStyle: FontStyle.italic,
+                          if (_isPlaying)
+                            Text(
+                              _sessionLabel,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: cs.onSurface,
+                                fontWeight: FontWeight.w600,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            )
+                          else
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _activeTab = 'mindfulness';
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 250),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: _activeTab == 'mindfulness'
+                                          ? accent.withOpacity(0.18)
+                                          : cs.surfaceContainerHighest.withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: _activeTab == 'mindfulness'
+                                            ? accent
+                                            : cs.outlineVariant.withOpacity(0.3),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.self_improvement_rounded,
+                                          size: 16,
+                                          color: _activeTab == 'mindfulness' ? accent : cs.onSurfaceVariant,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Mindfulness',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: _activeTab == 'mindfulness' ? cs.onSurface : cs.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _activeTab = 'guided';
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 250),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: _activeTab == 'guided'
+                                          ? accent.withOpacity(0.18)
+                                          : cs.surfaceContainerHighest.withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: _activeTab == 'guided'
+                                            ? accent
+                                            : cs.outlineVariant.withOpacity(0.3),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.spa_rounded,
+                                          size: 16,
+                                          color: _activeTab == 'guided' ? accent : cs.onSurfaceVariant,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Guided Meditation',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: _activeTab == 'guided' ? cs.onSurface : cs.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
                           if (_isPlaying) ...[
                             const SizedBox(height: 10),
                             AnimatedBuilder(
@@ -1326,147 +1322,145 @@ class _MindfulnessPageState extends State<MindfulnessPage>
 
                     const SizedBox(height: 16),
 
-                    Text(
-                      'Mindfulness Sessions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: cs.onSurface,
+                    if (_isPlaying
+                        ? _isSessionInMindfulnessList(_sessionLabel)
+                        : (_activeTab == 'mindfulness')) ...[
+                      Text(
+                        'Mindfulness Sessions',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                    // ── Session cards ────────────────────────────────────────
-                    ...List.generate(_sessions.length, (i) {
-                      final s = _sessions[i];
-                      final isCurrentPlaying = _isPlaying && _sessionLabel.contains(s['title'] as String);
-                      return GestureDetector(
-                        onTap: _isPlaying ? null : () {
-                          if (s['title'] == 'Body Scan') {
-                            _runBodyScan();
-                          } else if (s['title'] == 'Mindful Observation') {
-                            _runMindfulObservation();
-                          } else if (s['title'] == 'Loving Kindness') {
-                            _runLovingKindness();
-                          }
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: (s['color'] as Color).withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isCurrentPlaying
-                                  ? (s['color'] as Color)
-                                  : (s['color'] as Color).withOpacity(0.2),
-                              width: isCurrentPlaying ? 2 : 1,
+                      // ── Session cards ────────────────────────────────────────
+                      ...List.generate(_sessions.length, (i) {
+                        final s = _sessions[i];
+                        final isCurrentPlaying = _isPlaying && _sessionLabel.contains(s['title'] as String);
+                        return GestureDetector(
+                          onTap: _isPlaying ? null : () {
+                            if (s['title'] == 'Body Scan') {
+                              _runBodyScan();
+                            } else if (s['title'] == 'Mindful Observation') {
+                              _runMindfulObservation();
+                            } else if (s['title'] == 'Loving Kindness') {
+                              _runLovingKindness();
+                            }
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: (s['color'] as Color).withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isCurrentPlaying
+                                    ? (s['color'] as Color)
+                                    : (s['color'] as Color).withOpacity(0.2),
+                                width: isCurrentPlaying ? 2 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: (s['color'] as Color).withOpacity(0.15),
+                                  child: Icon(
+                                    s['icon'] as IconData,
+                                    color: s['color'] as Color,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(s['title'] as String,
+                                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                                      const SizedBox(height: 3),
+                                      Text(s['subtitle'] as String,
+                                          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                                    ],
+                                  ),
+                                ),
+                                if (isCurrentPlaying)
+                                  Icon(Icons.volume_up_rounded, color: s['color'] as Color)
+                                else if (!_isPlaying)
+                                  Icon(Icons.play_arrow_rounded, color: (s['color'] as Color).withOpacity(0.5)),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: (s['color'] as Color).withOpacity(0.15),
-                                child: Icon(
-                                  s['icon'] as IconData,
-                                  color: s['color'] as Color,
-                                ),
+                        );
+                      }),
+                    ] else ...[
+                      Text(
+                        'Guided Meditation Sessions 🎧',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ── Guided Meditation Sessions ───────────────────────────
+                      ...List.generate(_meditationSessions.length, (i) {
+                        final s = _meditationSessions[i];
+                        final isCurrentPlaying = _isPlaying && _sessionLabel.contains(s['title'] as String);
+                        return GestureDetector(
+                          onTap: _isPlaying ? null : () {
+                            if (s['title'] == 'Beginner Meditation') {
+                              _runBeginnerMeditation();
+                            } else if (s['title'] == 'Anxiety Reduction') {
+                              _runAnxietyReduction();
+                            } else if (s['title'] == 'Focus & Concentration') {
+                              _runFocusConcentration();
+                            } else if (s['title'] == 'Gratitude Meditation') {
+                              _runGratitudeMeditation();
+                            }
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: (s['color'] as Color).withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isCurrentPlaying
+                                    ? (s['color'] as Color)
+                                    : (s['color'] as Color).withOpacity(0.2),
+                                width: isCurrentPlaying ? 2 : 1,
                               ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(s['title'] as String,
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                                    const SizedBox(height: 3),
-                                    Text(s['subtitle'] as String,
-                                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                                  ],
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: (s['color'] as Color).withOpacity(0.15),
+                                  child: Icon(
+                                    s['icon'] as IconData,
+                                    color: s['color'] as Color,
+                                  ),
                                 ),
-                              ),
-                              if (isCurrentPlaying)
-                                Icon(Icons.volume_up_rounded, color: s['color'] as Color)
-                              else if (!_isPlaying)
-                                Icon(Icons.play_arrow_rounded, color: (s['color'] as Color).withOpacity(0.5)),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-
-                    const SizedBox(height: 28),
-
-                    Text(
-                      'Guided Meditation Sessions 🎧',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // ── Guided Meditation Sessions ───────────────────────────
-                    ...List.generate(_meditationSessions.length, (i) {
-                      final s = _meditationSessions[i];
-                      final isCurrentPlaying = _isPlaying && _sessionLabel.contains(s['title'] as String);
-                      return GestureDetector(
-                        onTap: _isPlaying ? null : () {
-                          if (s['title'] == 'Beginner Meditation') {
-                            _runBeginnerMeditation();
-                          } else if (s['title'] == 'Anxiety Reduction') {
-                            _runAnxietyReduction();
-                          } else if (s['title'] == 'Focus & Concentration') {
-                            _runFocusConcentration();
-                          } else if (s['title'] == 'Gratitude Meditation') {
-                            _runGratitudeMeditation();
-                          } else if (s['title'] == 'Breathing Exercise') {
-                            _runBreathingExercise();
-                          } else if (s['title'] == 'Sleep Relaxation') {
-                            _runSleepRelaxation();
-                          }
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: (s['color'] as Color).withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isCurrentPlaying
-                                  ? (s['color'] as Color)
-                                  : (s['color'] as Color).withOpacity(0.2),
-                              width: isCurrentPlaying ? 2 : 1,
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(s['title'] as String,
+                                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                                      const SizedBox(height: 3),
+                                      Text(s['subtitle'] as String,
+                                          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                                    ],
+                                  ),
+                                ),
+                                if (isCurrentPlaying)
+                                  Icon(Icons.volume_up_rounded, color: s['color'] as Color)
+                                else if (!_isPlaying)
+                                  Icon(Icons.play_arrow_rounded, color: (s['color'] as Color).withOpacity(0.5)),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: (s['color'] as Color).withOpacity(0.15),
-                                child: Icon(
-                                  s['icon'] as IconData,
-                                  color: s['color'] as Color,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(s['title'] as String,
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                                    const SizedBox(height: 3),
-                                    Text(s['subtitle'] as String,
-                                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                                  ],
-                                ),
-                              ),
-                              if (isCurrentPlaying)
-                                Icon(Icons.volume_up_rounded, color: s['color'] as Color)
-                              else if (!_isPlaying)
-                                Icon(Icons.play_arrow_rounded, color: (s['color'] as Color).withOpacity(0.5)),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
+                        );
+                      }),
+                    ],
                   ],
                 ),
               ),
@@ -1644,8 +1638,8 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
             if (widget.isPlaying) ...[
               // Outer breathing ripple 1
               Container(
-                width: 140 + (50 * _pulseAnimation.value),
-                height: 140 + (50 * _pulseAnimation.value),
+                width: 160 + (60 * _pulseAnimation.value),
+                height: 160 + (60 * _pulseAnimation.value),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: widget.accentColor.withOpacity(0.08 * (1.0 - _pulseAnimation.value)),
@@ -1653,8 +1647,8 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
               ),
               // Inner breathing ripple 2
               Container(
-                width: 140 + (25 * _pulseAnimation.value),
-                height: 140 + (25 * _pulseAnimation.value),
+                width: 160 + (30 * _pulseAnimation.value),
+                height: 160 + (30 * _pulseAnimation.value),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: widget.accentColor.withOpacity(0.12 * (1.0 - _pulseAnimation.value)),
@@ -1667,8 +1661,8 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
               scale: widget.isPlaying ? _scaleAnimation.value : 1.0,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
-                width: 140,
-                height: 140,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: widget.accentColor.withOpacity(widget.isPlaying ? 0.25 : 0.12),
@@ -1688,7 +1682,7 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
                 ),
                 child: Icon(
                   Icons.self_improvement_rounded,
-                  size: 64,
+                  size: 76,
                   color: widget.accentColor.withOpacity(widget.isPlaying ? 1.0 : 0.6),
                 ),
               ),
@@ -1697,8 +1691,8 @@ class _MindfulProgressIndicatorState extends State<_MindfulProgressIndicator>
             // 3. Progress arc surrounding the circle
             if (widget.isPlaying || widget.progress > 0)
               SizedBox(
-                width: 156,
-                height: 156,
+                width: 176,
+                height: 176,
                 child: CustomPaint(
                   painter: _CircularSessionProgressPainter(
                     progress: widget.progress,
