@@ -7,6 +7,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:mindmate/core/widgets/voice_mic_button.dart';
 import 'package:mindmate/features/emergency_support/screens/emergency_support_page.dart';
+import 'package:mindmate/features/mindfulness/services/mindfulness_gemini_service.dart';
 
 class MindfulnessPage extends StatefulWidget {
   const MindfulnessPage({super.key});
@@ -22,6 +23,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _progressController;
   final List<Timer> _guidanceTimers = [];
+  final MindfulnessGeminiService _geminiService = MindfulnessGeminiService();
 
   bool _isPlaying = false;
   String _sessionLabel = 'Tap a session to begin';
@@ -139,8 +141,14 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     });
 
     await Future.delayed(const Duration(milliseconds: 300));
+
+    final allSessionTitles = [
+      ..._sessions.map((s) => s['title'] as String),
+      ..._meditationSessions.map((s) => s['title'] as String),
+    ].join(', ');
+
     await _tts.speak(
-      'You are in the Mindfulness page. Choose a session to begin your practice.',
+      'You are in the Mindfulness page. Choose a session. Available sessions are: $allSessionTitles',
     );
   }
 
@@ -474,7 +482,25 @@ class _MindfulnessPageState extends State<MindfulnessPage>
       return;
     }
 
-    // 9. Standard command mapping
+    // 9. Tab Switching commands
+    if (text.contains('open mindfulness') || text.contains('show mindfulness')) {
+      setState(() {
+        _activeTab = 'mindfulness';
+        _statusLabel = 'Showing Mindfulness Sessions';
+      });
+      await _speakConversationalResponse('Opening mindfulness sessions. Which one would you like to start?');
+      return;
+    }
+    if (text.contains('open guidance meditation') || text.contains('open guided meditation') || text.contains('show guidance') || text.contains('show guided')) {
+      setState(() {
+        _activeTab = 'guided';
+        _statusLabel = 'Showing Guided Meditations';
+      });
+      await _speakConversationalResponse('Opening guided meditations. Which one would you like to start?');
+      return;
+    }
+
+    // 10. Standard command mapping
     if (text.contains('body') || text.contains('scan')) {
       setState(() => _statusLabel = 'Starting Body Scan…');
       await _runBodyScan();
@@ -506,11 +532,30 @@ class _MindfulnessPageState extends State<MindfulnessPage>
         Navigator.pop(context);
       }
     } else {
-      setState(() => _statusLabel = 'Command not recognized. Try saying a session name or "go back".');
-      await _tts.speak(
-        'I heard "$_recognizedText" but I did not recognize that command. '
-        'Try saying: Body Scan, Mindful Observation, Loving Kindness, Beginner Meditation, Anxiety Reduction, Focus, Gratitude, Stop, or Go Back.',
-      );
+      setState(() {
+        _statusLabel = 'Thinking…';
+      });
+      try {
+        final reply = await _geminiService.chat(text);
+        if (reply == 'CRISIS') {
+          setState(() => _statusLabel = 'Redirecting to Emergency Support…');
+          final msg = 'I hear how much pain you are in, and I want you to be safe. '
+              'I am redirecting you to our emergency support page immediately. Please connect with a professional. You are not alone.';
+          _chatHistory.add(_Message(msg, isUser: false));
+          await _tts.speak(msg);
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const EmergencySupportPage()),
+            );
+          }
+        } else {
+          await _speakConversationalResponse(reply);
+        }
+      } catch (e) {
+        setState(() => _statusLabel = 'Error connecting to Gemini.');
+        await _tts.speak("I'm having trouble connecting right now. Try asking about a meditation session.");
+      }
     }
   }
 
@@ -1040,6 +1085,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     _audioPlayer.stop();
     _audioPlayer.dispose();
     _progressController.dispose();
+    _geminiService.resetHistory();
     super.dispose();
   }
 

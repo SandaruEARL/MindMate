@@ -1,0 +1,268 @@
+Resolving dependencies...
+Downloading packages...
+  characters 1.4.0 (1.4.1 available)
+  cli_util 0.4.2 (0.5.1 available)
+  flutter_native_splash 2.4.7 (2.4.8 available)
+  flutter_riverpod 2.6.1 (3.3.1 available)
+  image 4.8.0 (4.9.1 available)
+  matcher 0.12.17 (0.12.20 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  meta 1.17.0 (1.18.3 available)
+  permission_handler 11.4.0 (12.0.3 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  permission_handler_apple 9.4.7 (9.4.9 available)
+  riverpod 2.6.1 (3.2.1 available)
+  synchronized 3.4.0 (3.4.1 available)
+  test_api 0.7.7 (0.7.12 available)
+  vector_math 2.2.0 (2.4.0 available)
+  xml 6.6.1 (7.0.1 available)
+Got dependencies!
+16 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing mindfulness_page.dart...                              
+
+  error • Missing concrete implementation of 'abstract class State<T extends StatefulWidget> with Diagnosticable.build' • lib/features/mindfulness/screens/mindfulness_page.dart:20:7 • non_abstract_class_inherits_abstract_member
+   info • The private field _isPlaying could be 'final' • lib/features/mindfulness/screens/mindfulness_page.dart:28:8 • prefer_final_fields
+   info • The private field _sessionLabel could be 'final' • lib/features/mindfulness/screens/mindfulness_page.dart:29:10 • prefer_final_fields
+   info • The private field _currentState could be 'final' • lib/features/mindfulness/screens/mindfulness_page.dart:37:10 • prefer_final_fields
+   info • The private field _detectedEmotion could be 'final' • lib/features/mindfulness/screens/mindfulness_page.dart:38:10 • prefer_final_fields
+warning • The value of the field '_detectedEmotion' isn't used • lib/features/mindfulness/screens/mindfulness_page.dart:38:10 • unused_field
+   info • The private field _activeTab could be 'final' • lib/features/mindfulness/screens/mindfulness_page.dart:39:10 • prefer_final_fields
+   info • The private field _pendingSuggestedSession could be 'final' • lib/features/mindfulness/screens/mindfulness_page.dart:40:10 • prefer_final_fields
+warning • The declaration '_onMicTap' isn't referenced • lib/features/mindfulness/screens/mindfulness_page.dart:171:16 • unused_element
+   info • 'listenFor' is deprecated and shouldn't be used. Use SpeechListenOptions.listenFor instead • lib/features/mindfulness/screens/mindfulness_page.dart:194:7 • deprecated_member_use
+   info • 'pauseFor' is deprecated and shouldn't be used. Use SpeechListenOptions.pauseFor instead • lib/features/mindfulness/screens/mindfulness_page.dart:195:7 • deprecated_member_use
+   info • 'localeId' is deprecated and shouldn't be used. Use SpeechListenOptions.localeId instead • lib/features/mindfulness/screens/mindfulness_page.dart:196:7 • deprecated_member_use
+   info • 'cancelOnError' is deprecated and shouldn't be used. Use SpeechListenOptions.cancelOnError instead • lib/features/mindfulness/screens/mindfulness_page.dart:197:7 • deprecated_member_use
+   info • 'partialResults' is deprecated and shouldn't be used. Use SpeechListenOptions.partialResults instead • lib/features/mindfulness/screens/mindfulness_page.dart:198:7 • deprecated_member_use
+warning • The declaration '_speakConversationalResponse' isn't referenced • lib/features/mindfulness/screens/mindfulness_page.dart:219:16 • unused_element
+warning • The declaration '_isSessionInMindfulnessList' isn't referenced • lib/features/mindfulness/screens/mindfulness_page.dart:228:8 • unused_element
+  error • Function expressions can't be named • lib/features/mindfulness/screens/mindfulness_page.dart:232:41 • named_function_expression
+  error • A value of type 'Future<Map<String, String>> Function(String)' can't be returned from the method '_isSessionInMindfulnessList' because it has a return type of 'bool' • lib/features/mindfulness/screens/mindfulness_page.dart:232:65 • return_of_invalid_type
+  error • Expected to find ';' • lib/features/mindfulness/screens/mindfulness_page.dart:358:3 • expected_token
+warning • Dead code • lib/features/mindfulness/screens/mindfulness_page.dart:358:4 • dead_code
+  error • Expected an identifier • lib/features/mindfulness/screens/mindfulness_page.dart:358:4 • missing_identifier
+  error • Unexpected text ';' • lib/features/mindfulness/screens/mindfulness_page.dart:358:4 • unexpected_token
+  error • Expected to find ';' • lib/features/mindfulness/screens/mindfulness_page.dart:358:6 • expected_token
+  error • Undefined name 'reply' • lib/features/mindfulness/screens/mindfulness_page.dart:358:6 • undefined_identifier
+  error • Expected a class member • lib/features/mindfulness/screens/mindfulness_page.dart:358:12 • expected_class_member
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:365:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:365:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:365:59 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:370:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:370:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:370:69 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:375:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:375:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:375:65 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:382:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:382:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:382:69 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:387:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:387:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:387:67 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:392:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:392:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:392:71 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:397:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:397:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:397:70 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:402:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:402:22 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:407:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:407:22 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:408:7 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/mindfulness/screens/mindfulness_page.dart:409:13 • undefined_identifier
+  error • Undefined name 'context' • lib/features/mindfulness/screens/mindfulness_page.dart:409:36 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:420:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:420:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:420:59 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:424:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:424:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:424:69 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:428:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:428:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:428:65 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:432:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:432:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:432:69 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:436:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:436:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:436:67 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:440:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:440:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:440:71 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:444:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:444:21 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:444:70 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:453:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:453:22 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:454:13 • undefined_identifier
+  error • Undefined name '_pendingSuggestedSession' • lib/features/mindfulness/screens/mindfulness_page.dart:461:9 • undefined_identifier
+  error • Undefined name '_pendingSuggestedSession' • lib/features/mindfulness/screens/mindfulness_page.dart:482:25 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:483:9 • undefined_function
+  error • Undefined name '_pendingSuggestedSession' • lib/features/mindfulness/screens/mindfulness_page.dart:484:11 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:485:11 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:489:9 • undefined_function
+  error • Undefined name '_pendingSuggestedSession' • lib/features/mindfulness/screens/mindfulness_page.dart:490:11 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:491:11 • undefined_identifier
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:493:15 • undefined_function
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:500:7 • undefined_function
+  error • Undefined name '_pendingSuggestedSession' • lib/features/mindfulness/screens/mindfulness_page.dart:500:22 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:504:9 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:509:9 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:510:7 • undefined_function
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:510:22 • undefined_identifier
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:517:15 • undefined_function
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:522:15 • undefined_function
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:540:7 • undefined_identifier
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:541:13 • undefined_function
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:551:5 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:551:20 • undefined_identifier
+  error • The function '_analyzeIntentWithGemini' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:552:30 • undefined_function
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:562:7 • undefined_function
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:562:22 • undefined_identifier
+  error • Undefined name '_chatHistory' • lib/features/mindfulness/screens/mindfulness_page.dart:563:7 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:564:13 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/mindfulness/screens/mindfulness_page.dart:565:11 • undefined_identifier
+  error • Undefined name 'context' • lib/features/mindfulness/screens/mindfulness_page.dart:567:11 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:575:7 • undefined_identifier
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:576:13 • undefined_function
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:583:7 • undefined_function
+  error • Undefined name '_pendingSuggestedSession' • lib/features/mindfulness/screens/mindfulness_page.dart:584:9 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:585:9 • undefined_identifier
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:587:13 • undefined_function
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:594:7 • undefined_identifier
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:595:13 • undefined_function
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:601:15 • undefined_function
+  error • The function '_speakConversationalResponse' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:607:11 • undefined_function
+  error • Undefined name '_guidanceTimers' • lib/features/mindfulness/screens/mindfulness_page.dart:611:25 • undefined_identifier
+  error • Undefined name '_guidanceTimers' • lib/features/mindfulness/screens/mindfulness_page.dart:614:5 • undefined_identifier
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:623:9 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:627:5 • undefined_function
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:628:7 • undefined_identifier
+  error • Undefined name '_sessionLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:629:7 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:630:7 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:633:5 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:634:5 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:635:5 • undefined_identifier
+  error • Undefined name '_audioPlayer' • lib/features/mindfulness/screens/mindfulness_page.dart:639:15 • undefined_identifier
+  error • Undefined name '_audioPlayer' • lib/features/mindfulness/screens/mindfulness_page.dart:640:15 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:647:11 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:648:11 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:649:11 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:657:15 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/mindfulness/screens/mindfulness_page.dart:660:15 • undefined_identifier
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:660:26 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:661:19 • undefined_identifier
+  error • Undefined name '_guidanceTimers' • lib/features/mindfulness/screens/mindfulness_page.dart:664:9 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:1095:11 • undefined_identifier
+  error • The function '_restoreNormalTtsSettings' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1096:11 • undefined_function
+  error • Undefined name '_audioPlayer' • lib/features/mindfulness/screens/mindfulness_page.dart:1097:11 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:1098:5 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:1099:5 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/mindfulness/screens/mindfulness_page.dart:1100:9 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1101:7 • undefined_function
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1102:9 • undefined_identifier
+  error • Undefined name '_sessionLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:1103:9 • undefined_identifier
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:1104:9 • undefined_identifier
+  error • Undefined name 'mounted' • lib/features/mindfulness/screens/mindfulness_page.dart:1111:9 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1112:7 • undefined_function
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1113:9 • undefined_identifier
+  error • Undefined name '_sessionLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:1114:9 • undefined_identifier
+  error • Undefined name '_chatHistory' • lib/features/mindfulness/screens/mindfulness_page.dart:1115:9 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:1118:11 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1119:5 • undefined_function
+  error • Undefined name '_currentState' • lib/features/mindfulness/screens/mindfulness_page.dart:1120:7 • undefined_identifier
+  error • Undefined name '_shouldAutoListen' • lib/features/mindfulness/screens/mindfulness_page.dart:1121:7 • undefined_identifier
+  error • The function '_restoreNormalTtsSettings' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1124:11 • undefined_function
+  error • Undefined name '_audioPlayer' • lib/features/mindfulness/screens/mindfulness_page.dart:1125:11 • undefined_identifier
+  error • Undefined name '_tts' • lib/features/mindfulness/screens/mindfulness_page.dart:1131:5 • undefined_identifier
+  error • Undefined name '_stt' • lib/features/mindfulness/screens/mindfulness_page.dart:1132:5 • undefined_identifier
+  error • Undefined name '_audioPlayer' • lib/features/mindfulness/screens/mindfulness_page.dart:1133:5 • undefined_identifier
+  error • Undefined name '_audioPlayer' • lib/features/mindfulness/screens/mindfulness_page.dart:1134:5 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:1135:5 • undefined_identifier
+  error • Invalid context for 'super' invocation • lib/features/mindfulness/screens/mindfulness_page.dart:1136:5 • super_in_invalid_context
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1160:24 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1160:38 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1161:21 • undefined_function
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1162:23 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:1177:40 • undefined_identifier
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1181:39 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1183:46 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1184:37 • undefined_function
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1185:39 • undefined_identifier
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1190:44 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:1192:47 • undefined_identifier
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1193:48 • undefined_identifier
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1201:32 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1207:37 • undefined_function
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1208:39 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1208:52 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1215:46 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1216:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1217:72 • deprecated_member_use
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1220:48 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1222:65 • deprecated_member_use
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1231:50 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1239:52 • undefined_identifier
+  error • The function 'setState' isn't defined • lib/features/mindfulness/screens/mindfulness_page.dart:1249:37 • undefined_function
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1250:39 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1250:52 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1257:46 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1258:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1259:72 • deprecated_member_use
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1262:48 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1264:65 • deprecated_member_use
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1273:50 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1281:52 • undefined_identifier
+  error • Undefined name '_sessions' • lib/features/mindfulness/screens/mindfulness_page.dart:1294:49 • undefined_identifier
+  error • Undefined name '_sessionLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:1295:39 • undefined_identifier
+  error • Undefined name '_meditationSessions' • lib/features/mindfulness/screens/mindfulness_page.dart:1297:49 • undefined_identifier
+  error • Undefined name '_sessionLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:1298:39 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1310:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1320:69 • deprecated_member_use
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:1340:56 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:1342:61 • undefined_identifier
+  error • Undefined name '_progressController' • lib/features/mindfulness/screens/mindfulness_page.dart:1343:71 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1370:68 • deprecated_member_use
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1385:25 • undefined_identifier
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1385:49 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1391:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1394:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1409:64 • deprecated_member_use
+  error • Undefined name '_chatHistory' • lib/features/mindfulness/screens/mindfulness_page.dart:1419:44 • undefined_identifier
+  error • Undefined name '_chatHistory' • lib/features/mindfulness/screens/mindfulness_page.dart:1421:47 • undefined_identifier
+  error • Undefined name '_chatHistory' • lib/features/mindfulness/screens/mindfulness_page.dart:1421:60 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1434:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1435:74 • deprecated_member_use
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1461:26 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1461:40 • undefined_identifier
+  error • Undefined name '_sessions' • lib/features/mindfulness/screens/mindfulness_page.dart:1472:40 • undefined_identifier
+  error • Undefined name '_sessions' • lib/features/mindfulness/screens/mindfulness_page.dart:1473:35 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1488:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1491:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1498:74 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1517:93 • deprecated_member_use
+  error • Undefined name '_isPlaying' • lib/features/mindfulness/screens/mindfulness_page.dart:1526:26 • undefined_identifier
+  error • Undefined name '_activeTab' • lib/features/mindfulness/screens/mindfulness_page.dart:1526:40 • undefined_identifier
+  error • Undefined name '_meditationSessions' • lib/features/mindfulness/screens/mindfulness_page.dart:1533:40 • undefined_identifier
+  error • Undefined name '_meditationSessions' • lib/features/mindfulness/screens/mindfulness_page.dart:1534:35 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1551:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1554:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1561:74 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1580:93 • deprecated_member_use
+  error • Undefined name '_isListening' • lib/features/mindfulness/screens/mindfulness_page.dart:1601:32 • undefined_identifier
+  error • Undefined name '_onMicTap' • lib/features/mindfulness/screens/mindfulness_page.dart:1602:26 • undefined_identifier
+  error • Undefined name '_statusLabel' • lib/features/mindfulness/screens/mindfulness_page.dart:1603:32 • undefined_identifier
+  error • Undefined name '_recognizedText' • lib/features/mindfulness/screens/mindfulness_page.dart:1604:35 • undefined_identifier
+  error • Expected a method, getter, setter or operator declaration • lib/features/mindfulness/screens/mindfulness_page.dart:1613:1 • expected_executable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1631:23 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1674:32 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1769:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1778:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1792:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1794:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1800:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/mindfulness/screens/mindfulness_page.dart:1810:45 • deprecated_member_use
+
