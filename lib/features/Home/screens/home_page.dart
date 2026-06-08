@@ -149,6 +149,9 @@ class _HomePageState extends State<HomePage> {
       await _speak('Speech recognition is not available on this device.');
       return;
     }
+    
+    // Forcefully reset navigation state if user interrupts
+    _isNavigating = false;
     await _tts.stop();
     setState(() {
       _isListening = true;
@@ -157,13 +160,24 @@ class _HomePageState extends State<HomePage> {
     });
     await _stt.listen(
       onResult: (r) {
-        if (mounted) setState(() => _recognizedText = r.recognizedWords);
+        if (mounted) {
+          setState(() => _recognizedText = r.recognizedWords);
+          // Auto-stop when the engine confirms the utterance is complete
+          if (r.finalResult && !_isNavigating) {
+            _stopListening();
+          }
+        }
       },
-      listenFor: const Duration(seconds: 20),
+      listenOptions: stt.SpeechListenOptions(
+        listenMode: stt.ListenMode.dictation,
+        cancelOnError: true,
+        partialResults: true,
+        autoPunctuation: false,
+        enableHapticFeedback: true,
+      ),
+      listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 4),
       localeId: 'en_US',
-      cancelOnError: true,
-      partialResults: true,
     );
   }
 
@@ -177,7 +191,14 @@ class _HomePageState extends State<HomePage> {
         _statusLabel = 'Processing…';
       });
     }
-    await _navigate(_recognizedText.toLowerCase());
+    
+    if (_recognizedText.isNotEmpty) {
+      final textToProcess = _recognizedText.toLowerCase();
+      _recognizedText = ''; // Clear early to prevent duplicate async triggers
+      await _navigate(textToProcess);
+    }
+    
+    _isNavigating = false;
     _isNavigating = false;
   }
 
