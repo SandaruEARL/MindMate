@@ -40,7 +40,7 @@ class _MindfulnessChatLogState extends State<MindfulnessChatLog> {
     const accent = Color(0xFF9C6FDE);
 
     return Container(
-      height: 180,
+      height: 250,
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -56,7 +56,7 @@ class _MindfulnessChatLogState extends State<MindfulnessChatLog> {
               Icon(Icons.forum_rounded, size: 16, color: accent),
               const SizedBox(width: 6),
               Text(
-                'VUI Conversation Log',
+                'Mindfulness and Meditation Conversation',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
