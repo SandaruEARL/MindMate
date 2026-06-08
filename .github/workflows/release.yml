@@ -1,0 +1,67 @@
+name: Build and Release APK
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.1'
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Prepare release folder
+        run: mkdir -p release
+
+      - name: Rename APK
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk \
+          release/mindmate-${{ github.ref_name }}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/mindmate-${{ github.ref_name }}.apk
+          body: |
+            ## MindMate ${{ github.ref_name }}
+
+            ### 📱 Installation
+            1. Download `mindmate-${{ github.ref_name }}.apk`
+            2. Enable "Install from Unknown Sources" on Android
+            3. Install the APK
+
+            ### ✨ Features
+            - Mood Tracking
+            - Voice-First Conversations
+            - Gemini AI Integration
+            - Breathing Exercises
+            - Mindfulness Support
+            - Emergency Assistance
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
