@@ -17,7 +17,6 @@ class MindMateApp extends StatelessWidget {
     return MaterialApp(
       title: 'MindMate 2.0',
       debugShowCheckedModeBanner: false,
-
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF63A4FF),
