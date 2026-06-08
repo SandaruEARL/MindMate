@@ -140,6 +140,14 @@ class _SleepVuiScreenState extends ConsumerState<SleepVuiScreen>
     final theme    = themeForPeriod(_period);
 
     ref.listen<SleepVuiState>(sleepVuiNotifierProvider, (prev, next) {
+
+      if (next.shouldExit && !(prev?.shouldExit ?? false)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Navigator.of(context).pop();
+        });
+        return;
+      }
+
       if (next.pendingRoute != null &&
           prev?.pendingRoute != next.pendingRoute) {
         final route = next.pendingRoute!;
@@ -215,179 +223,198 @@ class _SleepVuiScreenState extends ConsumerState<SleepVuiScreen>
                 child: Stack(
                   children: [
 
-                    // ── Chat scrolls full height ───────────────────
-                    Positioned.fill(
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 222, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-
-                            ...state.history.map((msg) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _ChatBubble(
-                                text:     msg.text,
-                                isUser:   msg.isUser,
-                                theme:    theme,
-                                intentLabel: (!msg.isUser && msg.intent != null)
-                                    ? _intentLabel(msg.intent!, msg.confidence ?? 0)
-                                    : null,
-                              ),
-                            )),
-
-                            // ── Thinking pill appears after last message ─────────────
-                            if (isProcessing || isSpeaking)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: _ThinkingPill(accentColor: theme.accentColor),
-                                ),
-                              ),
-
-                            if (state.tips != null && state.tips!.isNotEmpty) ...[
-                              const SizedBox(height: 6),
-                              ...state.tips!.map((t) =>
-                                  _SleepTipCard(tip: t, theme: theme)),
-                            ],
-
-                            if (state.routineSteps != null &&
-                                state.routineSteps!.isNotEmpty) ...[
-                              const SizedBox(height: 6),
-                              _RoutineStepper(
-                                  steps: state.routineSteps!, theme: theme),
-                            ],
-
-                            if (state.suggestions != null &&
-                                state.suggestions!.isNotEmpty &&
-                                !isBusy) ...[
-                              const SizedBox(height: 12),
-                              _SuggestionChips(
-                                suggestions: state.suggestions!,
-                                theme:       theme,
-                                onTap: (s) => notifier.sendSuggestion(s),
-                              ),
-                            ],
-
-                            const SizedBox(height: 16),
-                          ],
-                        ),
+                    // ── 1a. Solid status bar fill ────────────────────────
+                    Positioned(
+                      top: 0, left: 0, right: 0,
+                      height: statusBarHeight,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 800),
+                        color: theme.gradientColors[0],
                       ),
                     ),
 
-                    // ── Fade mask behind nav + mic ─────────────────
+                    // ── 1b. Sky background — clipped below status bar ────
                     Positioned(
-                      top: 0, left: 0, right: 0,
-                      height: 260,
-                      child: IgnorePointer(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin:  Alignment.topCenter,
-                              end:    Alignment.bottomCenter,
-                              stops:  const [0.0, 0.55, 1.0],
-                              colors: [
-                                theme.gradientColors[0],
-                                theme.gradientColors[0].withOpacity(0.8),
-                                theme.gradientColors[0].withOpacity(0.0),
+                      top:    statusBarHeight,
+                      left:   0,
+                      right:  0,
+                      bottom: 0,
+                      child: _SkyBackground(
+                        scrollController: _scrollController,
+                        period:           _period,
+                      ),
+                    ),
+
+                    // ── 2. Safe area content ─────────────────────────────
+                    SafeArea(
+                      child: Stack(
+                        children: [
+
+                          // ── Chat scrolls full height ───────────────────
+                          Positioned.fill(
+                            child: SingleChildScrollView(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.fromLTRB(16, 130, 16, 140),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+
+                                  ...state.history.map((msg) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: _ChatBubble(
+                                      text:        msg.text,
+                                      isUser:      msg.isUser,
+                                      theme:       theme,
+                                      intentLabel: (!msg.isUser && msg.intent != null)
+                                          ? _intentLabel(msg.intent!, msg.confidence ?? 0)
+                                          : null,
+                                    ),
+                                  )),
+
+                                  if (isProcessing || isSpeaking)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 10),
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: _ThinkingPill(accentColor: const Color(0xFF3F51B5)),
+                                      ),
+                                    ),
+
+                                  if (state.tips != null && state.tips!.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    ...state.tips!.map((t) =>
+                                        _SleepTipCard(tip: t, theme: theme)),
+                                  ],
+
+                                  if (state.routineSteps != null &&
+                                      state.routineSteps!.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    _RoutineStepper(
+                                        steps: state.routineSteps!, theme: theme),
+                                  ],
+
+                                  if (state.suggestions != null &&
+                                      state.suggestions!.isNotEmpty &&
+                                      !isBusy) ...[
+                                    const SizedBox(height: 12),
+                                    _SuggestionChips(
+                                      suggestions: state.suggestions!,
+                                      theme:       theme,
+                                      onTap: (s) => notifier.sendSuggestion(s),
+                                    ),
+                                  ],
+
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // ── Bottom fade — content visible through it ───
+                          Positioned(
+                            bottom: 0, left: 0, right: 0,
+                            height: 140,
+                            child: IgnorePointer(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.bottomCenter,
+                                    end:   Alignment.topCenter,
+                                    stops: const [0.0, 0.6, 1.0],
+                                    colors: [
+                                      theme.gradientColors[0].withOpacity(0.92),
+                                      theme.gradientColors[0].withOpacity(0.45),
+                                      theme.gradientColors[0].withOpacity(0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // ── Header pinned at top ───────────────────────
+                          Positioned(
+                            top: 0, left: 0, right: 0,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: theme.accentColor.withOpacity(0.2),
+                                      foregroundColor: theme.textPrimary,
+                                      shape: const CircleBorder(),
+                                    ),
+                                    icon: const Icon(Icons.arrow_back_rounded, size: 24),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      'Sleep Hygiene',
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.textPrimary,  // ← theme-aware
+                                      ),
+                                    ),
+                                  ),
+                                  _SkyControlButton(
+                                    icon:  Icons.sync_rounded,
+                                    onTap: _toggleTheme,
+                                    color: theme.accentColor,  // ← theme-aware
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // ── Mic pinned at bottom center ────────────────
+                          Positioned(
+                            bottom: 24, left: 0, right: 0,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _MicButton(
+                                  isListening:   isListening,
+                                  isBusy:        isBusy,
+                                  pulseAnim:     _pulseAnim,
+                                  accentColor:   const Color(0xFF3F51B5),
+                                  onTap: () {
+                                    if (isListening) {
+                                      notifier.stopListening();
+                                    } else if (!isBusy) {
+                                      notifier.startVoiceTurn();
+                                    }
+                                  },
+                                ),
+                                if (state.status == SleepVuiStatus.error &&
+                                    state.errorMessage != null)
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade900.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                            color: Colors.red.shade700.withOpacity(0.5)),
+                                      ),
+                                      child: Text(
+                                        state.errorMessage!,
+                                        style: TextStyle(
+                                            color: Colors.red.shade200, fontSize: 13),
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                    ),
 
-                    // ── Custom nav row ─────────────────────────────
-                    Positioned(
-                      top: 0, left: 0, right: 0,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 6),
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => Navigator.of(context).pop(),
-                              child: Container(
-                                width: 36, height: 36,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.12),
-                                ),
-                                child: Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  color: theme.textPrimary,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                'Sleep hygiene',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color:         theme.textPrimary,
-                                  fontSize:      17,
-                                  fontWeight:    FontWeight.w400,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                            ),
-                            _SkyControlButton(
-                              label: _isManualOverride
-                                  ? '${theme.nextPeriodIcon}·'
-                                  : theme.nextPeriodIcon,
-                              onTap:  _toggleTheme,
-                              color:  theme.textPrimary,
-                            ),
-                            const SizedBox(width: 4),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // ── Mic + error floats below nav ───────────────
-                    Positioned(
-                      top: 52, left: 0, right: 0,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _MicSection(
-                            isListening:   isListening,
-                            isBusy:        isBusy,
-                            pulseAnim:     _pulseAnim,
-                            status:        state.status,
-                            accentColor:   theme.accentColor,
-                            textSecondary: theme.textSecondary,
-                            onTap: () {
-                              if (isListening) {
-                                notifier.stopListening();
-                              } else if (!isBusy) {
-                                notifier.startVoiceTurn();
-                              }
-                            },
-                          ),
-                          if (state.status == SleepVuiStatus.error &&
-                              state.errorMessage != null)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade900.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                      color: Colors.red.shade700.withOpacity(0.5)),
-                                ),
-                                child: Text(state.errorMessage!,
-                                    style: TextStyle(
-                                        color: Colors.red.shade200, fontSize: 13)),
-                              ),
-                            ),
                         ],
                       ),
                     ),
-
                   ],
                 ),
               ),
@@ -409,7 +436,7 @@ class _SleepVuiScreenState extends ConsumerState<SleepVuiScreen>
 // 2. SKY CONTROL BUTTON
 // ════════════════════════════════════════════════════════════════
 
-class _SkyControlButton extends StatelessWidget {
+class _SkyControlButton extends StatefulWidget {
   final IconData?    icon;
   final String?      label;
   final VoidCallback onTap;
@@ -423,9 +450,39 @@ class _SkyControlButton extends StatelessWidget {
   });
 
   @override
+  State<_SkyControlButton> createState() => _SkyControlButtonState();
+}
+
+class _SkyControlButtonState extends State<_SkyControlButton>
+    with SingleTickerProviderStateMixin {
+
+  late AnimationController _spin;
+
+  @override
+  void initState() {
+    super.initState();
+    _spin = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+  }
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _spin.forward(from: 0.0);
+    widget.onTap();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: _handleTap,
       child: Container(
         width: 36, height: 36,
         decoration: BoxDecoration(
@@ -433,13 +490,20 @@ class _SkyControlButton extends StatelessWidget {
           color: Colors.white.withOpacity(0.12),
         ),
         alignment: Alignment.center,
-        child: icon != null
-            ? Icon(icon, color: color, size: 18)
-            : Text(label!, style: const TextStyle(fontSize: 15)),
+        child: AnimatedBuilder(
+          animation: _spin,
+          builder: (_, child) => Transform.rotate(
+            angle: _spin.value * 2 * 3.14159,
+            child: child,
+          ),
+          child: Icon(widget.icon ?? Icons.sync_rounded,
+              color: widget.color, size: 18),
+        ),
       ),
     );
   }
 }
+
 
 // ════════════════════════════════════════════════════════════════
 // 3. SKY BACKGROUND

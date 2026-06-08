@@ -9,7 +9,7 @@
 //   Fix 6  — Dynamic suggestions (no repeated chips)
 //   Fix 8  — Meta-intents require ≥2 keyword hits (negation only now)
 //   Fix 10 — STT retry loop with voice prompt
-//   Fix 11 — Intake phase (age + issue type)
+//   Fix 11 — Intake phase (age + issue type) — now fires after intro, not on first user message
 //   Fix 13 — _parseIssueType returns null on no match
 //   Fix 14 — await TTS completion before opening mic
 //   Fix 15 — issueType attempt cap (max 1 miss → default)
@@ -20,7 +20,9 @@
 //   Fix 20 — NAV_CONFIRM: Gemini handoff/crisis → confirmation ask first
 //   Fix 21 — Pending nav shortcut in notifier bypasses scoring pipeline
 //   Fix 22 — Only negation uses 2-hit meta guard; affirmation uses 1
+//   Fix 23 — Intake begins immediately after intro TTS, not on first user message
 
+// ignore_for_file: avoid_print
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -29,7 +31,9 @@ import 'gemini_service.dart';
 import 'speech_to_text_service.dart';
 import 'tts_service.dart';
 
-enum IntakePhase { pending, age, issueType, complete }
+// IntakePhase.pending is removed — intake is now driven by the notifier
+// immediately after the intro message, so 'pending' is no longer needed.
+enum IntakePhase { age, issueType, complete }
 
 class _PendingNav {
   final String route;
@@ -88,7 +92,9 @@ class SleepEngine {
 
   int?        userAge;
   String?     sleepIssueType;
-  IntakePhase intakePhase = IntakePhase.pending;
+
+  // Starts at 'age' — the notifier begins intake right after the intro.
+  IntakePhase intakePhase = IntakePhase.age;
 
   _PendingNav? pendingNav;
 
@@ -124,6 +130,87 @@ class SleepEngine {
 
   static List<String> confirmationChips(String route) =>
       const ['Yes please', 'No thanks'];
+
+  // ── Intake ────────────────────────────────────────────────────
+
+  String intakeQuestion() {
+    switch (intakePhase) {
+      case IntakePhase.age:
+        return "And what is your age (18-30)?";
+      case IntakePhase.issueType:
+        return "Got it. What's your main sleep problem - "
+            "trouble falling asleep, waking during the night, "
+            "or feeling unrefreshed in the morning?";
+      case IntakePhase.complete:
+        return '';
+    }
+  }
+
+  /// Returns true while intake is still in progress (caller should not
+  /// run the main engine for this turn).
+  bool handleIntake(String input) {
+    if (intakePhase == IntakePhase.complete) return false;
+
+    final t = input.toLowerCase().trim();
+
+    if (intakePhase == IntakePhase.age) {
+      final age = _parseAge(t);
+      if (age != null) {
+        userAge     = age;
+        intakePhase = IntakePhase.issueType;
+      }
+      // Even if age not parsed we stay on age phase — the notifier will
+      // re-ask the question.
+      return true;
+    }
+
+    if (intakePhase == IntakePhase.issueType) {
+      final parsed = _parseIssueType(t);
+      if (parsed != null) {
+        sleepIssueType     = parsed;
+        _issueTypeAttempts = 0;
+        intakePhase        = IntakePhase.complete;
+      } else {
+        _issueTypeAttempts++;
+        if (_issueTypeAttempts >= _kMaxIssueTypeAttempts) {
+          sleepIssueType     = 'unrefreshing';
+          _issueTypeAttempts = 0;
+          intakePhase        = IntakePhase.complete;
+        }
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  int? _parseAge(String t) {
+    final match = RegExp(r'\b(1[89]|2[0-9]|30)\b').firstMatch(t);
+    return match != null ? int.tryParse(match.group(0)!) : null;
+  }
+
+  String? _parseIssueType(String t) {
+    if (t.contains('fall')    || t.contains('onset')        ||
+        t.contains('falling') || t.contains('cant sleep')   ||
+        t.contains("can't sleep")) return 'onset';
+
+    if (t.contains('wak')     || t.contains('middle')       ||
+        t.contains('night')   || t.contains('keep waking')  ||
+        t.contains('wake up')) return 'maintenance';
+
+    if (t.contains('refresh') || t.contains('tired')        ||
+        t.contains('groggy')  || t.contains('morning')      ||
+        t.contains('unrefresh') || t.contains('rest'))       return 'unrefreshing';
+
+    if (t.contains('frustrat') || t.contains('stress')      ||
+        t.contains('anxious')  || t.contains('anxiety')     ||
+        t.contains('worried')  || t.contains('worry')       ||
+        t.contains('upset')    || t.contains('restless')    ||
+        t.contains('hard')     || t.contains('difficult')   ||
+        t.contains('problem')  || t.contains('issue'))       return 'onset';
+
+    return null;
+  }
 
   // ── Main entry point ──────────────────────────────────────────
 
@@ -189,6 +276,26 @@ class SleepEngine {
       SleepIntent.gratitude,
       SleepIntent.help,
     }.contains(topIntent)) {
+      // Check if a topic intent also scored — if so, let it win
+      final topicIntents = scores.entries.where((e) =>
+      !const {
+        SleepIntent.greeting, SleepIntent.gratitude, SleepIntent.help,
+        SleepIntent.repeat, SleepIntent.affirmation, SleepIntent.negation,
+        SleepIntent.unknown,
+      }.contains(e.key)
+      );
+
+      if (topicIntents.isNotEmpty) {
+        // Re-route to the top topic intent instead
+        final topTopic = topicIntents.first;
+        final topicConfidence = (topTopic.value / 5.0).clamp(0.0, 1.0);
+        if (topicConfidence >= 0.10) {
+          final response = _buildRoutingSignal(topTopic.key, tone, topicConfidence);
+          _pushTurn(intent: topTopic.key, input: input, response: response.message, tone: tone);
+          return response;
+        }
+      }
+
       final msg = SleepCorpus.pick(SleepCorpus.responseVariants[topIntent]!);
       _pushTurn(intent: topIntent, input: input, response: msg, tone: tone);
       return SleepResponse(intent: topIntent, message: msg, confidence: 1.0);
@@ -272,85 +379,6 @@ class SleepEngine {
     return Map.fromEntries(sorted);
   }
 
-  String intakeQuestion() {
-    switch (intakePhase) {
-      case IntakePhase.pending:
-        return '';
-      case IntakePhase.age:
-        return "One quick thing — how old are you? "
-            "I tailor advice for different life stages (18–21, 22–25, 26–30).";
-      case IntakePhase.issueType:
-        return "Got it. What's your main sleep problem — "
-            "trouble falling asleep, waking during the night, "
-            "or feeling unrefreshed in the morning?";
-      case IntakePhase.complete:
-        return '';
-    }
-  }
-
-  bool handleIntake(String input) {
-    if (intakePhase == IntakePhase.complete) return false;
-    if (intakePhase == IntakePhase.pending)  return false;
-
-    final t = input.toLowerCase().trim();
-
-    if (intakePhase == IntakePhase.age) {
-      final age = _parseAge(t);
-      if (age != null) {
-        userAge     = age;
-        intakePhase = IntakePhase.issueType;
-      }
-      return true;
-    }
-
-    if (intakePhase == IntakePhase.issueType) {
-      final parsed = _parseIssueType(t);
-      if (parsed != null) {
-        sleepIssueType     = parsed;
-        _issueTypeAttempts = 0;
-        intakePhase        = IntakePhase.complete;
-      } else {
-        _issueTypeAttempts++;
-        if (_issueTypeAttempts >= _kMaxIssueTypeAttempts) {
-          sleepIssueType     = 'unrefreshing';
-          _issueTypeAttempts = 0;
-          intakePhase        = IntakePhase.complete;
-        }
-      }
-      return true;
-    }
-
-    return false;
-  }
-
-  int? _parseAge(String t) {
-    final match = RegExp(r'\b(1[89]|2[0-9]|30)\b').firstMatch(t);
-    return match != null ? int.tryParse(match.group(0)!) : null;
-  }
-
-  String? _parseIssueType(String t) {
-    if (t.contains('fall')    || t.contains('onset')      ||
-        t.contains('falling') || t.contains('cant sleep') ||
-        t.contains("can't sleep")) return 'onset';
-
-    if (t.contains('wak')     || t.contains('middle')     ||
-        t.contains('night')   || t.contains('keep waking') ||
-        t.contains('wake up')) return 'maintenance';
-
-    if (t.contains('refresh') || t.contains('tired')      ||
-        t.contains('groggy')  || t.contains('morning')    ||
-        t.contains('unrefresh') || t.contains('rest'))     return 'unrefreshing';
-
-    if (t.contains('frustrat') || t.contains('stress')    ||
-        t.contains('anxious')  || t.contains('anxiety')   ||
-        t.contains('worried')  || t.contains('worry')     ||
-        t.contains('upset')    || t.contains('restless')  ||
-        t.contains('hard')     || t.contains('difficult') ||
-        t.contains('problem')  || t.contains('issue'))     return 'onset';
-
-    return null;
-  }
-
   SleepResponse _handleRepeat(String input) {
     if (_lastResponse.isEmpty) {
       const msg = "There's nothing to repeat yet. Ask me something first.";
@@ -424,11 +452,12 @@ class SleepEngine {
       }
     }
 
-    final msg = SleepCorpus.pick(
-        SleepCorpus.responseVariants[SleepIntent.affirmation]!);
-    _pushTurn(intent: SleepIntent.affirmation, input: input,
-        response: msg, tone: tone);
-    return _staticResponse(msg, SleepIntent.affirmation);
+    // Nothing for the engine to resolve — let Gemini honour its own offer.
+    return SleepResponse(
+      intent:     SleepIntent.affirmation,
+      message:    '',
+      confidence: 1.0,
+    );
   }
 
   SleepResponse _handleNegation(String input) {
@@ -544,7 +573,7 @@ class SleepEngine {
     _intentLog.clear();
     userAge            = null;
     sleepIssueType     = null;
-    intakePhase        = IntakePhase.pending;
+    intakePhase        = IntakePhase.age;   // ready for immediate intake
     _issueTypeAttempts = 0;
     pendingNav         = null;
   }
@@ -610,6 +639,7 @@ class SleepVuiState {
   final String?           pendingRoute;
   final SleepIntent?      lastIntent;
   final double            lastConfidence;
+  final bool              shouldExit;
 
   const SleepVuiState({
     this.status           = SleepVuiStatus.idle,
@@ -622,6 +652,7 @@ class SleepVuiState {
     this.pendingRoute,
     this.lastIntent,
     this.lastConfidence   = 0.0,
+    this.shouldExit       = false,
   });
 
   SleepVuiState copyWith({
@@ -637,6 +668,7 @@ class SleepVuiState {
     double?            lastConfidence,
     bool               clearCards = false,
     bool               clearRoute = false,
+    bool?              shouldExit,
   }) {
     return SleepVuiState(
       status:           status           ?? this.status,
@@ -649,6 +681,7 @@ class SleepVuiState {
       pendingRoute:     clearRoute ? null : (pendingRoute ?? this.pendingRoute),
       lastIntent:       lastIntent       ?? this.lastIntent,
       lastConfidence:   lastConfidence   ?? this.lastConfidence,
+      shouldExit:       shouldExit       ?? this.shouldExit,
     );
   }
 
@@ -671,23 +704,43 @@ class SleepVuiNotifier extends StateNotifier<SleepVuiState> {
     _init();
   }
 
+  // ── Startup: intro → immediate intake ────────────────────────
+
   Future<void> _init() async {
     _engine.reset();
     _gemini.resetHistory();
 
+    _engine.intakePhase = IntakePhase.complete;
+
+    state = const SleepVuiState();
+
+    try { await _stt.forceReset(); } catch (_) {}
+
     final micStatus = await Permission.microphone.status;
     state = state.copyWith(hasMicPermission: micStatus.isGranted);
 
-    final openingLine = _engine.entryMessage;
     try {
       await _tts.initialise();
-      await _tts.speak(openingLine);
     } catch (_) {}
 
-    state = state
-        .withMessage(ChatMessage(isUser: false, text: openingLine))
-        .copyWith(status: SleepVuiStatus.idle);
+    state = state.copyWith(status: SleepVuiStatus.idle);
+
+    injectWelcomeMessage(
+      'Ask any question related to sleep hygiene, bedtime routines',
+    );
+
+    try {
+      await _tts.speak('Ask any question related to sleep hygiene, bedtime routines');
+    } catch (_) {}
+
   }
+
+  void injectWelcomeMessage(String text) {
+    state = state.withMessage(ChatMessage(isUser: false, text: text));
+  }
+
+
+  // ── Voice turn ────────────────────────────────────────────────
 
   Future<void> startVoiceTurn() async {
     if (!state.hasMicPermission) {
@@ -753,9 +806,34 @@ class SleepVuiNotifier extends StateNotifier<SleepVuiState> {
     'continue', 'go', 'back', 'quit', 'done',
   };
 
+  static const _sttJunkPhrases = {
+    // question fragments
+    'what is', 'what are', 'what was', 'what were', 'what the',
+    'what do', 'what does', 'what did', 'what if', 'what about',
+    'how is', 'how are', 'how was', 'how do', 'how does',
+    'how did', 'how come', 'why is', 'why are', 'why do',
+    'why does', 'who is', 'who are', 'who was', 'where is',
+    'where are', 'when is', 'when are', 'can you', 'could you',
+    'would you', 'should i', 'can i', 'do i', 'is it',
+    'is there', 'are you', 'are there',
+
+    // filler/incomplete
+    'i mean', 'i think', 'i know', 'i dont', 'i don',
+    'i do', 'i just', 'i was', 'i am', 'i want',
+    'it is', 'it was', 'it the', 'so i', 'so um',
+    'so uh', 'like um', 'like uh', 'like i', 'like the',
+    'you know', 'you see', 'um okay', 'uh okay', 'um so',
+    'uh so', 'well i', 'well um', 'well uh', 'okay so',
+    'okay um', 'just um', 'just uh', 'just a', 'just the',
+    'kind of', 'sort of', 'a bit', 'a lot', 'a little',
+    'the um', 'the uh', 'and um', 'and uh', 'but um',
+    'but uh', 'or um', 'or uh',
+  };
+
   bool _isSttLowQuality(String raw) {
     final trimmed = raw.trim().toLowerCase();
     if (trimmed.isEmpty) return true;
+    if (_sttJunkPhrases.contains(trimmed)) return true;
     final wordCount = trimmed.split(RegExp(r'\s+')).length;
     if (wordCount >= 2) return false;
     if (_sttWhitelist.contains(trimmed)) return false;
@@ -773,7 +851,7 @@ class SleepVuiNotifier extends StateNotifier<SleepVuiState> {
       sendTextMessage(suggestion);
 
   Future<void> stopListening() async {
-    await _stt.stop();
+    await _stt.cancel();   // forceful abort, clears stale listeners
     state = state.copyWith(status: SleepVuiStatus.idle);
   }
 
@@ -782,56 +860,47 @@ class SleepVuiNotifier extends StateNotifier<SleepVuiState> {
   // ── Core input handler ────────────────────────────────────────
 
   Future<void> _handleInput(String input, {required bool isVoice}) async {
+
+    if (state.shouldExit) state = state.copyWith(shouldExit: false);
+
+    if (_engine.isExit(input)) {
+      final msg = _engine.exitMessage;
+      state = state
+          .withMessage(ChatMessage(isUser: true, text: input))
+          .withMessage(ChatMessage(isUser: false, text: msg))
+          .copyWith(status: SleepVuiStatus.speaking);
+      if (isVoice) await _tts.speak(msg);
+      state = state.copyWith(status: SleepVuiStatus.idle, shouldExit: true);
+      return;
+    }
+
     state = state
         .withMessage(ChatMessage(isUser: true, text: input))
         .copyWith(status: SleepVuiStatus.processing, clearCards: true);
 
-    // ── Intake ──────────────────────────────────────────────────
-    if (_engine.intakePhase == IntakePhase.pending) {
-      _engine.intakePhase = IntakePhase.age;
-      final question = _engine.intakeQuestion();
-      state = state
-          .withMessage(ChatMessage(isUser: false, text: question))
-          .copyWith(status: SleepVuiStatus.speaking);
-      if (isVoice) await _tts.speak(question);
-      state = state.copyWith(status: SleepVuiStatus.idle);
-      return;
-    }
-
+    // ── Intake (age → issueType → complete) ────────────────────
     if (_engine.intakePhase != IntakePhase.complete) {
       _engine.handleIntake(input);
+
       if (_engine.intakePhase == IntakePhase.complete) {
         _gemini.setUserContext(_engine.userAge, _engine.sleepIssueType);
-        const ack = "Great, I'll tailor everything to you from here. "
-            "What would you like help with?";
-        state = state
-            .withMessage(ChatMessage(isUser: false, text: ack))
-            .copyWith(status: SleepVuiStatus.speaking);
-        if (isVoice) await _tts.speak(ack);
-        state = state.copyWith(status: SleepVuiStatus.idle);
+
+      } else {
         return;
       }
-      final question = _engine.intakeQuestion();
-      state = state
-          .withMessage(ChatMessage(isUser: false, text: question))
-          .copyWith(status: SleepVuiStatus.speaking);
-      if (isVoice) await _tts.speak(question);
-      state = state.copyWith(status: SleepVuiStatus.idle);
-      return;
     }
 
     // ── Fix 21: pending nav shortcut ───────────────────────────
-    // Bypass scoring entirely when waiting for yes/no confirmation.
     if (_engine.pendingNav != null) {
-      final t   = input.trim().toLowerCase();
-      final isYes = t.contains('yes')    || t.contains('yeah')  ||
-          t.contains('sure')   || t.contains('ok')    ||
-          t.contains('okay')   || t.contains('please') ||
-          t.contains('yep')    || t.contains('yup')   ||
+      final t     = input.trim().toLowerCase();
+      final isYes = t.contains('yes')     || t.contains('yeah')   ||
+          t.contains('sure')    || t.contains('ok')     ||
+          t.contains('okay')    || t.contains('please')  ||
+          t.contains('yep')     || t.contains('yup')    ||
           t.contains('alright') || t.contains('fine');
-      final isNo  = t.contains('no')     || t.contains('nah')   ||
-          t.contains('nope')   || t.contains('cancel') ||
-          t.contains('don\'t') || t.contains('dont');
+      final isNo  = t.contains('no')      || t.contains('nah')    ||
+          t.contains('nope')    || t.contains('cancel')  ||
+          t.contains('don\'t')  || t.contains('dont');
 
       if (isYes || isNo) {
         final nav = _engine.pendingNav!;
@@ -890,7 +959,7 @@ class SleepVuiNotifier extends StateNotifier<SleepVuiState> {
       return;
     }
 
-    // Engine owns this response
+    // Engine owns this response (meta-intents + routine)
     final engineOwnsResponse = engineResponse.message.isNotEmpty &&
         (engineResponse.routineSteps != null ||
             const {
@@ -908,7 +977,9 @@ class SleepVuiNotifier extends StateNotifier<SleepVuiState> {
         assistantReply: engineResponse.message,
       );
     } else {
-      // Full Gemini
+      // Full Gemini — yield one frame so processing status renders the pill
+      state = state.copyWith(status: SleepVuiStatus.processing);
+      await Future.delayed(const Duration(milliseconds: 32));
       final geminiReply = await _gemini.chat(input);
 
       if (geminiReply == 'CRISIS') {

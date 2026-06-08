@@ -168,7 +168,7 @@ const nightTheme = SkyTheme(
   horizonGlowColor:        Color(0xFF000000), // unused
   horizonGlowOpacity:      0.0,
   celestialDuration:       Duration(hours: 10),
-  nextPeriodIcon:          '🌄', // cycles to morning
+  nextPeriodIcon:          '', // cycles to morning
 );
 
 // ── 2. Morning  (06:00–11:59) ──────────────────────────────────
@@ -228,7 +228,7 @@ const dayTheme = SkyTheme(
   horizonGlowColor:        Color(0xFFffe082),
   horizonGlowOpacity:      0.30,
   celestialDuration:       Duration(hours: 5),
-  nextPeriodIcon:          '🌆', // cycles to afternoon
+  nextPeriodIcon:          '', // cycles to afternoon
 );
 
 // ── 4. Afternoon  (17:00–19:59) ────────────────────────────────
@@ -252,7 +252,7 @@ const afternoonTheme = SkyTheme(
   textSecondary:  Color(0xFFffcc80),
   nebulaColor1:   Color(0xFFff6b35),
   nebulaColor2:   Color(0xFF9c27b0),
-  celestialEmoji:          '🌇',
+  celestialEmoji:          '',
   celestialSize:           44,
   showSunHalo:             true,
   showStars:               false,

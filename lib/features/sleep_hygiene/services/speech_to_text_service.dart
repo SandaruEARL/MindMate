@@ -1,29 +1,19 @@
 // speech_to_text_service.dart
 //
 // Fixes in this version:
-//   Fix A — post-stop settle delay: waits 500 ms after stop() before
-//            calling listen() so Android's speech recognizer fully
-//            releases its audio session. Primary guard against
-//            error_busy and TTS echo transcription.
-//   Fix B — error_busy retry: if _listenOnce() returns '__busy__' it
-//            waits another 500 ms and retries once before throwing.
-//   Fix C — Completer-based result: replaces the racy polling loop
-//            with a Completer<String> resolved by whichever fires
-//            first: finalResult, status done/notListening, or error.
-//   Fix D — dictation mode replaces confirmation mode: streams results
-//            continuously and finalises naturally with full sentences
-//            instead of waiting for a deliberate command-style pause.
-//   Fix E — localeId removed: lets the device use its own locale so
-//            non-US accents are recognised accurately.
-//   Fix F — partialResults: true keeps the partial buffer fresh
-//            throughout so the timeout fallback returns the full
-//            recognised text seen so far, not just the last chunk.
-//   Fix G — listenFor raised to 15 s, pauseFor to 3 s: covers longer
-//            sleep-related sentences and tolerates natural in-sentence
-//            pauses without premature cutoff. Safety timeout raised to
-//            18 s to match.
-//   Fix H — error fallback returns partial (not '') so any words
-//            already recognised are not thrown away on a non-busy error.
+//   Fix A — post-stop settle delay
+//   Fix B — error_busy retry
+//   Fix C — Completer-based result
+//   Fix D — dictation mode
+//   Fix E — localeId removed
+//   Fix F — partialResults: true
+//   Fix G — listenFor 15 s, pauseFor 3 s, safety timeout 18 s
+//   Fix H — error fallback returns partial
+//   Fix I — forceReset(): cancels stale session + re-initialises plugin,
+//            called by the notifier on every screen entry so a previous
+//            session's native audio lock is fully released before TTS starts.
+//   Fix J — listeners wired BEFORE listen() to eliminate the race window
+//            where status 'done' fires before statusListener is assigned.
 
 import 'dart:async';
 
@@ -43,16 +33,31 @@ class SpeechToTextService {
   Future<bool> initialise() async {
     if (_isInitialised) return true;
     _isInitialised = await _speech.initialize(
-      onError: (error) {
-        // ignore: avoid_print
-        print('[STT] init error: ${error.errorMsg} permanent=${error.permanent}');
-      },
-      onStatus: (status) {
-        // ignore: avoid_print
-        print('[STT] status: $status');
-      },
+      onError:  (e) => print('[STT] init error: ${e.errorMsg} permanent=${e.permanent}'),
+      onStatus: (s) => print('[STT] status: $s'),
     );
     return _isInitialised;
+  }
+
+  // Fix I — hard-reset the plugin.
+  // Call this at screen entry (before TTS starts) to release any native
+  // audio lock left over from a previous session.
+  Future<void> forceReset() async {
+    try {
+      // cancel() is more forceful than stop() — no async result flush
+      await _speech.cancel();
+    } catch (_) {}
+
+    // Clear stale listeners so they cannot fire during the upcoming TTS phase
+    _speech.statusListener = null;
+    _speech.errorListener  = null;
+
+    // Re-initialise so the plugin starts with a clean native state
+    _isInitialised = false;
+    _isInitialised = await _speech.initialize(
+      onError:  (e) => print('[STT] init error: ${e.errorMsg} permanent=${e.permanent}'),
+      onStatus: (s) => print('[STT] status: $s'),
+    );
   }
 
   Future<String> listen() async {
@@ -64,20 +69,17 @@ class SpeechToTextService {
       }
     }
 
-    // Ensure any previous session is fully stopped before starting a new one
     if (_speech.isListening) {
       await _speech.stop();
     }
 
-    // Fix A: give Android's speech engine time to fully release audio focus.
-    // 500 ms covers mid-range Android hardware and physical speaker ring-off
-    // that causes echo transcription of the previous TTS utterance.
+    // Fix A: give Android's audio session time to fully release
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // Fix B: retry once on error_busy with a longer back-off
+    // Fix B: retry once on error_busy
     String result = await _listenOnce();
     if (result == '__busy__') {
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 600));
       result = await _listenOnce();
       if (result == '__busy__') {
         throw const SpeechException(
@@ -93,9 +95,6 @@ class SpeechToTextService {
     return result;
   }
 
-  // Fix C + D + E + F + G + H: improved single listen attempt.
-  // Returns '__busy__' on error_busy so the caller can retry.
-  // Returns ''         only when truly nothing was heard.
   Future<String> _listenOnce() async {
     final completer = Completer<String>();
     String partial  = '';
@@ -108,48 +107,40 @@ class SpeechToTextService {
       }
     }
 
-    await _speech.listen(
-      onResult: (result) {
-        // Fix F: keep partial fresh on every callback
-        partial = result.recognizedWords;
-        if (result.finalResult) resolve(partial);
-      },
-      // Fix F: partialResults keeps the buffer updated between callbacks
-      partialResults: true,
-      // Fix G: longer window for natural sleep-topic sentences
-      listenFor:      const Duration(seconds: 15),
-      pauseFor:       const Duration(seconds: 3),
-      // Fix D: dictation streams continuously — correct mode for sentences
-      listenMode:     stt.ListenMode.dictation,
-      // Fix E: no localeId — device picks its own locale for best accuracy
-      cancelOnError:  false,
-    );
-
-    // Status changes drive completion when onResult doesn't fire a final.
-    // Assigned after listen() to avoid overwriting the package's own handler.
+    // Fix J — wire listeners BEFORE listen() so no status event is missed
     _speech.statusListener = (status) {
-      // ignore: avoid_print
       print('[STT] status: $status');
       if ((status == 'done' || status == 'notListening') && !resolved) {
         resolve(partial);
       }
     };
 
-    // Error handler — surfaces busy vs other errors
     _speech.errorListener = (error) {
-      // ignore: avoid_print
       print('[STT] error: ${error.errorMsg} permanent=${error.permanent}');
       if (!resolved) {
         if (error.errorMsg == 'error_busy') {
           resolve('__busy__');
         } else {
-          // Fix H: return whatever partial we have — don't discard recognised words
+          // Fix H: return whatever partial we have
           resolve(partial.isNotEmpty ? partial : '');
         }
       }
     };
 
-    // Fix G: safety timeout — 18 s covers listenFor + pauseFor + margin
+    await _speech.listen(
+      onResult: (result) {
+        partial = result.recognizedWords;           // Fix F
+        if (result.finalResult) resolve(partial);
+      },
+      partialResults: true,                         // Fix F
+      listenFor:      const Duration(seconds: 15),  // Fix G
+      pauseFor:       const Duration(seconds: 3),   // Fix G
+      listenMode:     stt.ListenMode.dictation,     // Fix D
+      cancelOnError:  false,
+      // Fix E: no localeId — device picks its own locale
+    );
+
+    // Fix G: safety timeout
     return completer.future.timeout(
       const Duration(seconds: 18),
       onTimeout: () {
@@ -161,6 +152,13 @@ class SpeechToTextService {
 
   Future<void> stop() async {
     if (_speech.isListening) await _speech.stop();
+  }
+
+  // Forceful abort — used by stopListening() in the notifier
+  Future<void> cancel() async {
+    try { await _speech.cancel(); } catch (_) {}
+    _speech.statusListener = null;
+    _speech.errorListener  = null;
   }
 
   bool get isListening => _speech.isListening;

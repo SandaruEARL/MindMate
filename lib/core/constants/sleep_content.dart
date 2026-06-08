@@ -151,14 +151,25 @@ class SleepCorpus {
       'i feel anxious', "i'm anxious", 'im anxious', 'help me relax',
       'calm me down', 'i am panicking', 'having a panic', 'panic attack',
       'anxious at night', 'anxiety before bed',
+      'go to breathing', 'open breathing', 'breathing exercise',
+      'breathing exercises', 'take me to breathing', 'go breathing',
+      'breathing module', 'start breathing',
     ],
-    '/meditation': [
+    '/mindfulness': [
       'meditate before bed', 'guided meditation',
       'meditation for sleep', 'open meditation',
+      'go to mindfulness', 'open mindfulness', 'mindfulness module',
+      'take me to mindfulness', 'go mindfulness', 'start mindfulness',
+      'go to meditation', 'take me to meditation',
     ],
-    '/psychoeducation': [
-      'i feel depressed', "i'm depressed", 'im depressed',
-      'depression and sleep',
+    '/mood': [
+      'go to mood', 'open mood', 'mood tracking', 'mood module',
+      'take me to mood', 'track my mood', 'go mood',
+      'mood tracker', 'start mood tracking',
+    ],
+    '/emergency': [
+      'emergency', 'crisis', 'emergency support',
+      'go to emergency', 'open emergency', 'take me to emergency',
     ],
   };
 
