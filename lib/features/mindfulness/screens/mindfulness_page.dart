@@ -102,7 +102,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Mindfulness'),
+        title: const Text('Mindfulness & Meditation'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: cs.onSurface,

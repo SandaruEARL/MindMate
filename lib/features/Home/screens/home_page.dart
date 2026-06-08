@@ -52,11 +52,11 @@ const _navItems = [
   ),
   _NavItem(
     icon: Icons.self_improvement_rounded,
-    label: 'Mindfulness',
+    label: 'Mindfulness\n& Meditation',
     color: Color(0xFF3F51B5), // Amber/Yellow
     keywords: ['mindful', 'meditat', 'aware', 'present'],
     page: MindfulnessPage(),
-    speech: 'Opening Mindfulness.',
+    speech: '',
   ),
   _NavItem(
     icon: Icons.mood_rounded,
@@ -217,7 +217,9 @@ class _HomePageState extends State<HomePage> {
   }) async {
     if (!mounted) return;
     setState(() => _statusLabel = label);
-    await _speak(speech);
+    if (speech.isNotEmpty) {
+      await _speak(speech);
+    }
     if (mounted) {
       await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
       await _speak('You are back on the home page.');

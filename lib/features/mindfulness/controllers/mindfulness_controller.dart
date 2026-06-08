@@ -99,7 +99,7 @@ class MindfulnessController extends ChangeNotifier {
       ...kGuidedMeditationSessions.map((s) => s['title'] as String),
     ].join(', ');
     await tts.speak(
-      'You are in the Mindfulness page. Choose a session. Available sessions are: $allTitles',
+      'You are in the Mindfulness and Meditation page. Choose a session. Available sessions are: $allTitles',
     );
   }
 
