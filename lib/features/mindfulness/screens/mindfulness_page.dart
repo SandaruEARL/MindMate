@@ -33,7 +33,6 @@ class _MindfulnessPageState extends State<MindfulnessPage>
   bool _isProcessing = false;
   String _recognizedText = '';
   String _statusLabel = 'Tap the mic and speak';
-  bool _shouldAutoListen = false;
   String _currentState = 'idle'; // 'idle', 'awaiting_meditation_choice', 'awaiting_reflection_response'
   String _detectedEmotion = 'none'; // 'none', 'stress', 'anxiety', 'sleep', 'sad'
   String _activeTab = 'chat'; // 'chat' (default), 'mindfulness', or 'guided'
@@ -131,14 +130,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
       }
     });
 
-    _tts.setCompletionHandler(() {
-      if (mounted && !_isPlaying && _shouldAutoListen) {
-        setState(() {
-          _shouldAutoListen = false;
-        });
-        _startListening();
-      }
-    });
+    _tts.setCompletionHandler(() {});
 
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -224,7 +216,6 @@ class _MindfulnessPageState extends State<MindfulnessPage>
   Future<void> _speakConversationalResponse(String response) async {
     setState(() {
       _chatHistory.add(_Message(response, isUser: false));
-      _shouldAutoListen = true;
       _statusLabel = 'Speaking answer…';
     });
     await _tts.speak(response);
@@ -1085,7 +1076,6 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     await _tts.speak('Session complete. Well done... How do you feel now?');
     setState(() {
       _currentState = 'awaiting_reflection_response';
-      _shouldAutoListen = true;
     });
     await Future.delayed(const Duration(seconds: 4));
     await _restoreNormalTtsSettings();

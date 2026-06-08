@@ -17,7 +17,7 @@ import 'package:http/http.dart' as http;
 ///    are hardcoded while conversational queries leverage the LLM.
 class MindfulnessGeminiService {
   static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
-  static const String _model = 'gemini-2.5-flash';
+  static const String _model = 'gemini-flash-latest';
   static final String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/'
       '$_model:generateContent?key=$_apiKey';
@@ -69,36 +69,43 @@ STRICT RULES:
       ],
     });
 
-    final response = await http
-        .post(
-          Uri.parse(_baseUrl),
-          headers: {'Content-Type': 'application/json'},
-          body: requestBody,
-        )
-        .timeout(const Duration(seconds: 10));
+    try {
+      final response = await http
+          .post(
+            Uri.parse(_baseUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          )
+          .timeout(const Duration(seconds: 10));
 
-    if (response.statusCode != 200) {
-      throw Exception('Gemini API returned status code ${response.statusCode}');
+      if (response.statusCode != 200) {
+        
+        print('[MindfulnessGeminiService] HTTP ERROR ${response.statusCode}: ${response.body}');
+        throw Exception('Gemini API returned status code ${response.statusCode}');
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final candidates = json['candidates'] as List?;
+
+      if (candidates == null || candidates.isEmpty) {
+        throw Exception('No candidates returned from Gemini');
+      }
+
+      final parts = (candidates[0]['content']?['parts'] as List?) ?? [];
+      final text = parts.map((p) => (p['text'] as String?) ?? '').join('').trim();
+
+      if (text.isEmpty) {
+        throw Exception('Empty text response from Gemini');
+      }
+
+      // Add model reply to history
+      _history.add(_turn('model', text));
+      print('[MindfulnessGeminiService] Received: $text');
+      return text;
+    } catch (e) {
+      print('[MindfulnessGeminiService] Error calling Gemini API: $e');
+      rethrow;
     }
-
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final candidates = json['candidates'] as List?;
-
-    if (candidates == null || candidates.isEmpty) {
-      throw Exception('No candidates returned from Gemini');
-    }
-
-    final parts = (candidates[0]['content']?['parts'] as List?) ?? [];
-    final text = parts.map((p) => (p['text'] as String?) ?? '').join('').trim();
-
-    if (text.isEmpty) {
-      throw Exception('Empty text response from Gemini');
-    }
-
-    // Add model reply to history
-    _history.add(_turn('model', text));
-    print('[MindfulnessGeminiService] Received: $text');
-    return text;
   }
 
   /// Clears conversation history context.
