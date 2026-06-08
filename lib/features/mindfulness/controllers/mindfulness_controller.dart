@@ -125,8 +125,8 @@ class MindfulnessController extends ChangeNotifier {
   // ── TTS helpers ───────────────────────────────────────────────────────────
 
   Future<void> _restoreNormalTtsSettings() async {
-    await tts.setSpeechRate(0.45);
-    await tts.setPitch(1.0);
+    await tts.setSpeechRate(0.55); // Increased for faster reading
+    await tts.setPitch(0.85); // Decreased for a calmer, more soothing tone
     await tts.setVolume(1.0);
   }
 
