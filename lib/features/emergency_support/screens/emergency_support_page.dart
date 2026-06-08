@@ -101,8 +101,8 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFFE05C5C).withOpacity(0.85),
-                    const Color(0xFFE05C5C).withOpacity(0.55),
+                    const Color(0xFFE05C5C).withValues(alpha: 0.85),
+                    const Color(0xFFE05C5C).withValues(alpha: 0.55),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
@@ -150,16 +150,18 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: (c['color'] as Color).withOpacity(0.09),
+                  color: (c['color'] as Color).withValues(alpha: 0.09),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: (c['color'] as Color).withOpacity(0.25),
+                    color: (c['color'] as Color).withValues(alpha: 0.25),
                   ),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: (c['color'] as Color).withOpacity(0.18),
+                      backgroundColor: (c['color'] as Color).withValues(
+                        alpha: 0.18,
+                      ),
                       child: Icon(
                         c['icon'] as IconData,
                         color: c['color'] as Color,

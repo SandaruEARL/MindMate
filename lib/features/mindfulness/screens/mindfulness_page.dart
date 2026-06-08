@@ -48,7 +48,8 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
     {
       'icon': '🌿',
       'title': 'Be kind to yourself',
-      'body': 'There is no right or wrong way — every moment of awareness counts.',
+      'body':
+          'There is no right or wrong way — every moment of awareness counts.',
     },
   ];
 
@@ -78,11 +79,11 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
 
     await _tts.speak(
       'Close your eyes and take a deep breath. '
-          'Slowly bring your attention to the top of your head. '
-          'Notice any tension and let it melt away. '
-          'Move your awareness gently down to your shoulders, arms, and hands. '
-          'Continue down through your chest, belly, and legs. '
-          'You are fully present. Well done.',
+      'Slowly bring your attention to the top of your head. '
+      'Notice any tension and let it melt away. '
+      'Move your awareness gently down to your shoulders, arms, and hands. '
+      'Continue down through your chest, belly, and legs. '
+      'You are fully present. Well done.',
     );
 
     setState(() {
@@ -122,8 +123,8 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    accent.withOpacity(0.85),
-                    accent.withOpacity(0.50),
+                    accent.withValues(alpha: 0.85),
+                    accent.withValues(alpha: 0.50),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
@@ -142,7 +143,11 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
                   SizedBox(height: 6),
                   Text(
                     'A few mindful minutes can reset your entire day.',
-                    style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -160,16 +165,16 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
                     height: 140,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: accent.withOpacity(_isPlaying ? 0.25 : 0.12),
+                      color: accent.withValues(alpha: _isPlaying ? 0.25 : 0.12),
                       border: Border.all(
-                        color: accent.withOpacity(_isPlaying ? 0.7 : 0.3),
+                        color: accent.withValues(alpha: _isPlaying ? 0.7 : 0.3),
                         width: 2,
                       ),
                     ),
                     child: Icon(
                       Icons.self_improvement_rounded,
                       size: 64,
-                      color: accent.withOpacity(_isPlaying ? 1.0 : 0.6),
+                      color: accent.withValues(alpha: _isPlaying ? 1.0 : 0.6),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -185,9 +190,11 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
                   const SizedBox(height: 14),
                   FilledButton.icon(
                     onPressed: _isPlaying ? null : _runBodyScan,
-                    icon: Icon(_isPlaying
-                        ? Icons.hourglass_top_rounded
-                        : Icons.play_arrow_rounded),
+                    icon: Icon(
+                      _isPlaying
+                          ? Icons.hourglass_top_rounded
+                          : Icons.play_arrow_rounded,
+                    ),
                     label: Text(_isPlaying ? 'Playing…' : 'Start Body Scan'),
                     style: FilledButton.styleFrom(backgroundColor: accent),
                   ),
@@ -214,26 +221,43 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: (s['color'] as Color).withOpacity(0.1),
+                  color: (s['color'] as Color).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: (s['color'] as Color).withOpacity(0.25)),
+                  border: Border.all(
+                    color: (s['color'] as Color).withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: (s['color'] as Color).withOpacity(0.2),
-                      child: Icon(s['icon'] as IconData, color: s['color'] as Color),
+                      backgroundColor: (s['color'] as Color).withValues(
+                        alpha: 0.2,
+                      ),
+                      child: Icon(
+                        s['icon'] as IconData,
+                        color: s['color'] as Color,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(s['title'] as String,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                          Text(
+                            s['title'] as String,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
                           const SizedBox(height: 3),
-                          Text(s['subtitle'] as String,
-                              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                          Text(
+                            s['subtitle'] as String,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -246,7 +270,11 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
 
             Text(
               'Mindfulness Tips',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: cs.onSurface),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -269,12 +297,22 @@ class _MindfulnessPageState extends State<MindfulnessPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(t['title']!,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                          Text(
+                            t['title']!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
                           const SizedBox(height: 3),
-                          Text(t['body']!,
-                              style: TextStyle(
-                                  fontSize: 13, color: cs.onSurfaceVariant, height: 1.4)),
+                          Text(
+                            t['body']!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: cs.onSurfaceVariant,
+                              height: 1.4,
+                            ),
+                          ),
                         ],
                       ),
                     ),

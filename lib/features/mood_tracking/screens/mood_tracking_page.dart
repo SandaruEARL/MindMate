@@ -13,18 +13,19 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
   int? _selectedMoodIndex;
 
   final List<Map<String, dynamic>> _moods = [
-    {'emoji': '😄', 'label': 'Great',    'color': const Color(0xFF4CAF82)},
-    {'emoji': '🙂', 'label': 'Good',     'color': const Color(0xFF6C63FF)},
-    {'emoji': '😐', 'label': 'Okay',     'color': const Color(0xFFFFA726)},
-    {'emoji': '😔', 'label': 'Low',      'color': const Color(0xFF2196F3)},
-    {'emoji': '😞', 'label': 'Struggling','color': const Color(0xFFE05C5C)},
+    {'emoji': '😄', 'label': 'Great', 'color': const Color(0xFF4CAF82)},
+    {'emoji': '🙂', 'label': 'Good', 'color': const Color(0xFF6C63FF)},
+    {'emoji': '😐', 'label': 'Okay', 'color': const Color(0xFFFFA726)},
+    {'emoji': '😔', 'label': 'Low', 'color': const Color(0xFF2196F3)},
+    {'emoji': '😞', 'label': 'Struggling', 'color': const Color(0xFFE05C5C)},
   ];
 
   final List<Map<String, String>> _tips = [
     {
       'icon': '📓',
       'title': 'Journal it',
-      'body': 'Write 3 sentences about how you feel — it helps process emotions.',
+      'body':
+          'Write 3 sentences about how you feel — it helps process emotions.',
     },
     {
       'icon': '🌤️',
@@ -55,7 +56,7 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
     await Future.delayed(const Duration(milliseconds: 300));
     await _tts.speak(
       'You are in the Mood Tracking page. '
-          'Tap how you are feeling right now to log your mood.',
+      'Tap how you are feeling right now to log your mood.',
     );
   }
 
@@ -106,8 +107,8 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    accent.withOpacity(0.85),
-                    accent.withOpacity(0.50),
+                    accent.withValues(alpha: 0.85),
+                    accent.withValues(alpha: 0.50),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
@@ -126,7 +127,11 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
                   SizedBox(height: 6),
                   Text(
                     'Tracking your mood daily helps you understand your emotional patterns.',
-                    style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -154,10 +159,13 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
                   onTap: () => _selectMood(i),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? (m['color'] as Color).withOpacity(0.2)
+                          ? (m['color'] as Color).withValues(alpha: 0.2)
                           : cs.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
@@ -169,8 +177,10 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
                     ),
                     child: Column(
                       children: [
-                        Text(m['emoji'] as String,
-                            style: const TextStyle(fontSize: 28)),
+                        Text(
+                          m['emoji'] as String,
+                          style: const TextStyle(fontSize: 28),
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           m['label'] as String,
@@ -203,33 +213,45 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              ..._log.take(5).map((entry) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Text(entry['emoji'] as String,
-                        style: const TextStyle(fontSize: 22)),
-                    const SizedBox(width: 12),
-                    Text(
-                      entry['label'] as String,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14),
+              ..._log
+                  .take(5)
+                  .map(
+                    (entry) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            entry['emoji'] as String,
+                            style: const TextStyle(fontSize: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            entry['label'] as String,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            entry['time'] as String,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const Spacer(),
-                    Text(
-                      entry['time'] as String,
-                      style: TextStyle(
-                          fontSize: 12, color: cs.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              )),
+                  ),
             ],
 
             const SizedBox(height: 28),
@@ -237,9 +259,10 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
             Text(
               'Mood Tips',
               style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: cs.onSurface),
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -262,15 +285,22 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(t['title']!,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14)),
+                          Text(
+                            t['title']!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
                           const SizedBox(height: 3),
-                          Text(t['body']!,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: cs.onSurfaceVariant,
-                                  height: 1.4)),
+                          Text(
+                            t['body']!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: cs.onSurfaceVariant,
+                              height: 1.4,
+                            ),
+                          ),
                         ],
                       ),
                     ),
