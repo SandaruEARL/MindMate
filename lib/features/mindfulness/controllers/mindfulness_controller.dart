@@ -91,6 +91,7 @@ class MindfulnessController extends ChangeNotifier {
       debugPrint('TTS error: $msg');
       if (_context != null && isPlaying) stopSession();
     });
+    await tts.awaitSpeakCompletion(true);
     tts.setCompletionHandler(() {});
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -144,7 +145,11 @@ class MindfulnessController extends ChangeNotifier {
       await tts.speak('Speech recognition is not available on this device.');
       return;
     }
+    
+    // Forcefully reset processing state if the user manually interrupts
+    isProcessing = false;
     await tts.stop();
+    
     isListening = true;
     recognizedText = '';
     statusLabel = 'Listening…';
@@ -177,9 +182,15 @@ class MindfulnessController extends ChangeNotifier {
     statusLabel = 'Processing…';
     if (recognizedText.isNotEmpty) {
       chatHistory.add(MindfulnessMessage(recognizedText, isUser: true));
+      notifyListeners();
+      
+      final textToProcess = recognizedText.toLowerCase();
+      recognizedText = ''; // Clear early to prevent duplicate async triggers
+      await _handleVoiceCommand(textToProcess);
+    } else {
+      notifyListeners();
     }
-    notifyListeners();
-    await _handleVoiceCommand(recognizedText.toLowerCase());
+    
     isProcessing = false;
     notifyListeners();
   }
@@ -190,6 +201,7 @@ class MindfulnessController extends ChangeNotifier {
     chatHistory.add(MindfulnessMessage(response, isUser: false));
     statusLabel = 'Speaking answer…';
     notifyListeners();
+    await tts.stop(); // Stop any overlapping/queued speech before speaking
     await tts.speak(response);
   }
 
@@ -474,7 +486,7 @@ class MindfulnessController extends ChangeNotifier {
       return;
     }
 
-    // ── Psychoeducation & info queries ──────────────────────────────────────
+    // ── Psychoeducation & info queries (Local-First to save API Quota) ──────
 
     if (text.contains('what is mindfulness') || text.contains('explain mindfulness')) {
       await speakConversationalResponse(
@@ -630,7 +642,19 @@ class MindfulnessController extends ChangeNotifier {
       } catch (e) {
         statusLabel = 'Connection Error';
         notifyListeners();
-        await tts.speak("I'm having trouble connecting right now. Would you like to try a breathing exercise instead?");
+        
+        // Smart Local Fallback if Gemini quota is exhausted (429)
+        if (text.contains('mindfulness')) {
+          await speakConversationalResponse('Mindfulness is the practice of being fully present. Would you like to start a session?');
+        } else if (text.contains('anxiety')) {
+          await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Anxiety Reduction meditation?');
+        } else if (text.contains('stress')) {
+          await speakConversationalResponse('Stress is how your body responds to pressures. You can manage it by taking deep breaths. Would you like to try a meditation?');
+        } else if (text.contains('meditation')) {
+          await speakConversationalResponse('Regular meditation helps calm your nervous system. Would you like to try a guided meditation now?');
+        } else {
+          await tts.speak("My AI connection is currently exhausted, but you can still use all local features. Try saying 'Start Body Scan' or 'Play Rain'.");
+        }
       }
     }
   }
