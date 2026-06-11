@@ -4,7 +4,6 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:mindmate/features/emergency_support/screens/emergency_support_page.dart';
-import 'package:mindmate/features/mindfulness/services/mindfulness_gemini_service.dart';
 import 'package:mindmate/features/mindfulness/services/mindfulness_session_data.dart';
 
 /// MindfulnessController holds all business logic, state, and VUI handling
@@ -20,7 +19,6 @@ class MindfulnessController extends ChangeNotifier {
   final FlutterTts tts = FlutterTts();
   final stt.SpeechToText sttEngine = stt.SpeechToText();
   final AudioPlayer audioPlayer = AudioPlayer();
-  final MindfulnessGeminiService geminiService = MindfulnessGeminiService();
 
   late final AnimationController progressController;
   final List<Timer> _guidanceTimers = [];
@@ -617,44 +615,26 @@ class MindfulnessController extends ChangeNotifier {
       await tts.speak('Going back to the home page.');
       if (_context != null && _context!.mounted) Navigator.pop(_context!);
     } else {
-      // Fallback to Gemini
-      statusLabel = 'Thinking…';
+      // Local fallback (API removed)
+      statusLabel = 'Processing locally…';
       notifyListeners();
-      try {
-        final reply = await geminiService.generateResponse(text);
-        if (reply == 'CRISIS') {
-          statusLabel = 'Redirecting to Emergency Support…';
-          notifyListeners();
-          const msg =
-              'I hear how much pain you are in, and I want you to be safe. '
-              'I am redirecting you to our emergency support page immediately. Please connect with a professional. You are not alone.';
-          chatHistory.add(MindfulnessMessage(msg, isUser: false));
-          await tts.speak(msg);
-          if (_context != null && _context!.mounted) {
-            Navigator.push(
-              _context!,
-              MaterialPageRoute(builder: (_) => const EmergencySupportPage()),
-            );
-          }
-        } else {
-          await speakConversationalResponse(reply);
-        }
-      } catch (e) {
-        statusLabel = 'Connection Error';
+      
+      if (text.contains('mindfulness')) {
+        await speakConversationalResponse('Mindfulness is the practice of being fully present. Would you like to start a session?');
+      } else if (text.contains('anxiety')) {
+        await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Anxiety Reduction meditation?');
+      } else if (text.contains('stress')) {
+        await speakConversationalResponse('Stress is how your body responds to pressures. You can manage it by taking deep breaths. Would you like to try a meditation?');
+      } else if (text.contains('meditation')) {
+        await speakConversationalResponse('Regular meditation helps calm your nervous system. Would you like to try a guided meditation now?');
+      } else {
+        chatHistory.add(const MindfulnessMessage(
+          "I am sorry, I didn't catch that. Try saying 'Start Body Scan' or ask me about mindfulness.",
+          isUser: false,
+        ));
+        statusLabel = 'Waiting for input';
         notifyListeners();
-        
-        // Smart Local Fallback if Gemini quota is exhausted (429)
-        if (text.contains('mindfulness')) {
-          await speakConversationalResponse('Mindfulness is the practice of being fully present. Would you like to start a session?');
-        } else if (text.contains('anxiety')) {
-          await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Anxiety Reduction meditation?');
-        } else if (text.contains('stress')) {
-          await speakConversationalResponse('Stress is how your body responds to pressures. You can manage it by taking deep breaths. Would you like to try a meditation?');
-        } else if (text.contains('meditation')) {
-          await speakConversationalResponse('Regular meditation helps calm your nervous system. Would you like to try a guided meditation now?');
-        } else {
-          await tts.speak("My AI connection is currently exhausted, but you can still use all local features. Try saying 'Start Body Scan' or 'Play Rain'.");
-        }
+        await tts.speak("I am sorry, I didn't catch that. Try saying 'Start Body Scan' or ask me about mindfulness.");
       }
     }
   }
@@ -836,7 +816,6 @@ class MindfulnessController extends ChangeNotifier {
     audioPlayer.stop();
     audioPlayer.dispose();
     progressController.dispose();
-    geminiService.resetHistory();
     super.dispose();
   }
 }
