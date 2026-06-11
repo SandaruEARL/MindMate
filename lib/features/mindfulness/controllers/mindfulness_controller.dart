@@ -749,7 +749,7 @@ class MindfulnessController extends ChangeNotifier {
     required String title,
     required Duration duration,
     required List<Map<String, dynamic>> cues,
-    bool playMusic = false,
+    bool playMusic = true,
   }) async {
     if (isPlaying) return;
     _clearGuidanceTimers();
