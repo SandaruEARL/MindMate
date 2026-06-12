@@ -98,7 +98,7 @@ class AboutUsSheet extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: colorScheme.onSurface.withOpacity(0.2),
+                    color: colorScheme.onSurface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -167,7 +167,7 @@ class AboutUsSheet extends StatelessWidget {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: colorScheme.outlineVariant.withOpacity(0.3),
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
 
               const SizedBox(height: 8),
@@ -178,7 +178,7 @@ class AboutUsSheet extends StatelessWidget {
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(28, 16, 28, 40),
                   itemCount: teamMembers.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 28),
+                  separatorBuilder: (_, _) => const SizedBox(height: 28),
                   itemBuilder: (context, index) {
                     final member = teamMembers[index];
                     return MinimalMemberRow(member: member);
@@ -258,7 +258,7 @@ class MinimalMemberRow extends StatelessWidget {
                 member.feature,
                 style: TextStyle(
                   fontSize: 13,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                   height: 1.3,
                 ),
               ),
