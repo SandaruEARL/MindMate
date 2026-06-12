@@ -9,6 +9,7 @@ import 'package:mindmate/features/mindfulness/screens/mindfulness_page.dart';
 import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart';
 import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
+import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
 
 /// HomeController manages the Voice User Interface (VUI) for the Home Page.
 /// It strictly follows the Rule-Based Spoken Language System Architecture:
@@ -128,10 +129,13 @@ class HomeController extends ChangeNotifier {
     String speechResponse = '';
 
     final callKey = CrisisDetector.detectCallIntent(text);
+    final breathingExId = BreathingDetector.detectExerciseIntent(text);
 
     // NLU: Scanning for keywords
     if (callKey != null || CrisisDetector.isCrisis(text)) {
       intent = 'NAVIGATE_EMERGENCY';
+    } else if (breathingExId != null) {
+      intent = 'NAVIGATE_BREATHING_EXERCISE';
     } else if (text.contains('breath') || text.contains('relax') || text.contains('calm') || text.contains('exercise')) {
       intent = 'NAVIGATE_BREATHING';
     } else if (text.contains('sleep') || text.contains('rest') || text.contains('bedtime') || text.contains('hygiene') || text.contains('insomnia')) {
@@ -146,6 +150,11 @@ class HomeController extends ChangeNotifier {
 
     // Dialogue Manager: Act on Intent
     switch (intent) {
+      case 'NAVIGATE_BREATHING_EXERCISE':
+        targetPage = BreathingExercisesPage(initialExerciseId: breathingExId);
+        speechResponse = 'Starting breathing exercise.';
+        statusLabel = 'Going to Breathing Exercises…';
+        break;
       case 'NAVIGATE_BREATHING':
         targetPage = const BreathingExercisesPage();
         speechResponse = 'Opening Breathing Exercises.';

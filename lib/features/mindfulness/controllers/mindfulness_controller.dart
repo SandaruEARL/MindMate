@@ -4,8 +4,10 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:mindmate/features/emergency_support/screens/emergency_support_page.dart';
+import 'package:mindmate/features/breathing_exercises/screens/breathing_exercises_page.dart';
 import 'package:mindmate/features/mindfulness/services/mindfulness_session_data.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
+import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
 
 /// MindfulnessController holds all business logic, state, and VUI handling
 /// for the Mindfulness page. It is a [ChangeNotifier] so the UI can rebuild
@@ -228,6 +230,21 @@ class MindfulnessController extends ChangeNotifier {
         Navigator.push(
           _context!,
           MaterialPageRoute(builder: (_) => EmergencySupportPage(initialCallKey: callKey)),
+        );
+      }
+      return;
+    }
+
+    // 1b. Breathing Exercise detection (Global routing)
+    final breathingExId = BreathingDetector.detectExerciseIntent(text);
+    if (breathingExId != null) {
+      statusLabel = 'Redirecting to Breathing Exercises…';
+      notifyListeners();
+      await tts.speak('Starting breathing exercise.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(
+          _context!,
+          MaterialPageRoute(builder: (_) => BreathingExercisesPage(initialExerciseId: breathingExId)),
         );
       }
       return;

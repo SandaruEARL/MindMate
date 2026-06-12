@@ -3,7 +3,8 @@ import 'package:mindmate/core/widgets/voice_mic_button.dart';
 import '../controllers/breathing_controller.dart';
 
 class BreathingExercisesPage extends StatefulWidget {
-  const BreathingExercisesPage({super.key});
+  final String? initialExerciseId;
+  const BreathingExercisesPage({super.key, this.initialExerciseId});
 
   @override
   State<BreathingExercisesPage> createState() => _BreathingExercisesPageState();
@@ -17,7 +18,7 @@ class _BreathingExercisesPageState extends State<BreathingExercisesPage>
   void initState() {
     super.initState();
     _controller = BreathingController(vsync: this);
-    _controller.init();
+    _controller.init(initialExerciseId: widget.initialExerciseId);
   }
 
   @override

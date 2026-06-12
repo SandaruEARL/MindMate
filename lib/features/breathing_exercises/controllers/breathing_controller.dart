@@ -9,6 +9,7 @@ import 'package:mindmate/features/mindfulness/screens/mindfulness_page.dart';
 import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart';
 import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
+import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
 
 /// BreathingController manages the Voice User Interface (VUI) for Breathing Exercises.
 /// It strictly follows the Rule-Based Spoken Language System Architecture:
@@ -88,7 +89,7 @@ class BreathingController extends ChangeNotifier {
 
   // ── Initialization ──
 
-  Future<void> init() async {
+  Future<void> init({String? initialExerciseId}) async {
     circleController = AnimationController(
       vsync: vsync,
       duration: const Duration(seconds: 4),
@@ -97,19 +98,31 @@ class BreathingController extends ChangeNotifier {
       CurvedAnimation(parent: circleController, curve: Curves.easeInOut),
     );
 
-    await _initTts();
+    await _initTts(skipGreeting: initialExerciseId != null);
     await _initStt();
+
+    if (initialExerciseId != null) {
+      final ex = exercises.firstWhere(
+        (e) => e['id'] == initialExerciseId,
+        orElse: () => <String, dynamic>{},
+      );
+      if (ex.isNotEmpty) {
+        runExercise(ex);
+      }
+    }
   }
 
-  Future<void> _initTts() async {
+  Future<void> _initTts({bool skipGreeting = false}) async {
     await tts.setLanguage('en-US');
     await tts.setSpeechRate(0.45);
     await tts.setVolume(1.0);
     await tts.setPitch(1.0);
     await tts.awaitSpeakCompletion(true);
 
-    await Future.delayed(const Duration(milliseconds: 500));
-    await speak('You are in Breathing Exercises. Which exercise would you like to start?');
+    if (!skipGreeting) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      await speak('You are in Breathing Exercises. Which exercise would you like to start?');
+    }
   }
 
   Future<void> _initStt() async {
@@ -217,20 +230,14 @@ class BreathingController extends ChangeNotifier {
     // NLU: Exercise Commands
     else if (text.contains('stop') || text.contains('cancel') || text.contains('pause')) {
       intent = 'STOP_EXERCISE';
-    } else if (text.contains('box')) {
-      intent = 'START_EXERCISE';
-      exerciseToStart = exercises.firstWhere((e) => e['id'] == BreathingCorpus.idBox);
-    } else if (text.contains('4 7 8') || text.contains('four seven eight')) {
-      intent = 'START_EXERCISE';
-      exerciseToStart = exercises.firstWhere((e) => e['id'] == BreathingCorpus.id478);
-    } else if (text.contains('deep') || text.contains('belly')) {
-      intent = 'START_EXERCISE';
-      exerciseToStart = exercises.firstWhere((e) => e['id'] == BreathingCorpus.idDeep);
-    } else if (text.contains('body') || text.contains('scan')) {
-      intent = 'START_EXERCISE';
-      exerciseToStart = exercises.firstWhere((e) => e['id'] == BreathingCorpus.idBodyScan);
-    } else if (text.contains('help') || text.contains('what can i say')) {
-      intent = 'HELP';
+    } else {
+      final detectedExId = BreathingDetector.detectExerciseIntent(text);
+      if (detectedExId != null) {
+        intent = 'START_EXERCISE';
+        exerciseToStart = exercises.firstWhere((e) => e['id'] == detectedExId);
+      } else if (text.contains('help') || text.contains('what can i say')) {
+        intent = 'HELP';
+      }
     }
 
     // Dialogue Manager: Act on Intent
