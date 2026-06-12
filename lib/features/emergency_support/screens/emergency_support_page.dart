@@ -4,7 +4,9 @@ import '../models/emergency_contact.dart';
 import '../controllers/emergency_support_controller.dart';
 
 class EmergencySupportPage extends StatefulWidget {
-  const EmergencySupportPage({super.key});
+  const EmergencySupportPage({super.key, this.initialCallKey});
+  
+  final String? initialCallKey;
 
   @override
   State<EmergencySupportPage> createState() => _EmergencySupportPageState();
@@ -16,7 +18,7 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
   @override
   void initState() {
     super.initState();
-    _controller.init();
+    _controller.init(widget.initialCallKey);
   }
 
   @override

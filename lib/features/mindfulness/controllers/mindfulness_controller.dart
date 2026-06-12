@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:mindmate/features/emergency_support/screens/emergency_support_page.dart';
 import 'package:mindmate/features/mindfulness/services/mindfulness_session_data.dart';
+import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 
 /// MindfulnessController holds all business logic, state, and VUI handling
 /// for the Mindfulness page. It is a [ChangeNotifier] so the UI can rebuild
@@ -214,16 +215,8 @@ class MindfulnessController extends ChangeNotifier {
     }
 
     // 1. Crisis / Self-Harm detection (always first, always highest priority)
-    if (text.contains('kill myself') ||
-        text.contains('suicide') ||
-        text.contains('hurt myself') ||
-        text.contains('end my life') ||
-        text.contains('die') ||
-        text.contains('crisis') ||
-        text.contains('emergency') ||
-        text.contains('self harm') ||
-        text.contains('cutting') ||
-        text.contains('harming')) {
+    final callKey = CrisisDetector.detectCallIntent(text);
+    if (callKey != null || CrisisDetector.isCrisis(text)) {
       statusLabel = 'Redirecting to Emergency Support…';
       notifyListeners();
       const msg =
@@ -234,7 +227,7 @@ class MindfulnessController extends ChangeNotifier {
       if (_context != null && _context!.mounted) {
         Navigator.push(
           _context!,
-          MaterialPageRoute(builder: (_) => const EmergencySupportPage()),
+          MaterialPageRoute(builder: (_) => EmergencySupportPage(initialCallKey: callKey)),
         );
       }
       return;

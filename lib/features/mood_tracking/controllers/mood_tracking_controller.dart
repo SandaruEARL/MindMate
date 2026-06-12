@@ -7,6 +7,7 @@ import 'package:mindmate/features/emergency_support/screens/emergency_support_pa
 import 'package:mindmate/features/breathing_exercises/screens/breathing_exercises_page.dart';
 import 'package:mindmate/features/mindfulness/screens/mindfulness_page.dart';
 import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
+import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 
 // ── Mood Data Models ────────────────────────────────────────────────────────
 
@@ -245,8 +246,12 @@ class MoodTrackingController extends ChangeNotifier {
     String intent = 'UNKNOWN';
     Widget? targetPage;
 
+    final callKey = CrisisDetector.detectCallIntent(t);
+
     // NLU: Navigation Keywords
-    if (t.contains('home') || t.contains('go back') || t.contains('exit')) {
+    if (callKey != null || CrisisDetector.isCrisis(t)) {
+      intent = 'NAVIGATE_EMERGENCY';
+    } else if (t.contains('home') || t.contains('go back') || t.contains('exit')) {
       intent = 'NAVIGATE_HOME';
     } else if (t.contains('emergency') || t.contains('crisis') || t.contains('suicide') || t.contains('kill myself') || t.contains('hurt myself')) {
       intent = 'NAVIGATE_EMERGENCY';
@@ -267,7 +272,7 @@ class MoodTrackingController extends ChangeNotifier {
           if (_context != null && _context!.mounted) Navigator.of(_context!).popUntil((r) => r.isFirst);
           return;
         case 'NAVIGATE_EMERGENCY':
-          targetPage = const EmergencySupportPage();
+          targetPage = EmergencySupportPage(initialCallKey: callKey);
           _addAssistantTurn('I can hear that you are really struggling. Taking you to Emergency Support now.', isPreset: false);
           await speak('Taking you to Emergency Support now.');
           break;

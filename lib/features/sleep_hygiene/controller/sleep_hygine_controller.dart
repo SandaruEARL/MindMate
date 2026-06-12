@@ -7,6 +7,7 @@ import 'package:mindmate/features/mindfulness/screens/mindfulness_page.dart';
 import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart';
 import '../../../core/services/speech_to_text_service.dart';
 import '../../../core/services/tts_service.dart';
+import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 
 
 /// SleepController holds all business logic, state, and VUI handling
@@ -416,15 +417,8 @@ class SleepController extends ChangeNotifier {
     }
 
     // ── 0. Crisis detection — always first, even during intake ────────────────
-    if (text.contains('kill myself')  ||
-        text.contains('suicide')      ||
-        text.contains('hurt myself')  ||
-        text.contains('end my life')  ||
-        text.contains('crisis')       ||
-        text.contains('emergency')    ||
-        text.contains('self harm')    ||
-        text.contains('cutting')      ||
-        text.contains('harming')) {
+    final callKey = CrisisDetector.detectCallIntent(text);
+    if (callKey != null || CrisisDetector.isCrisis(text)) {
       _consecutiveFallbacks = 0;
       statusLabel = 'Redirecting to Emergency Support…';
       notifyListeners();
@@ -436,7 +430,7 @@ class SleepController extends ChangeNotifier {
       if (_context != null && _context!.mounted) {
         Navigator.push(
           _context!,
-          MaterialPageRoute(builder: (_) => const EmergencySupportPage()),
+          MaterialPageRoute(builder: (_) => EmergencySupportPage(initialCallKey: callKey)),
         );
       }
       return;

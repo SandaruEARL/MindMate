@@ -35,10 +35,27 @@ class EmergencySupportController extends ChangeNotifier {
 
   // ── Initialization ──
 
-  Future<void> init() async {
+  Future<void> init([String? initialCallKey]) async {
     await _loadSavedNumbers();
-    await _initTts();
+    await _initTts(skipWelcome: initialCallKey != null);
     await _initStt();
+
+    if (initialCallKey != null) {
+      if (initialCallKey == 'unknown') {
+        statusLabel = 'Which contact?';
+        notifyListeners();
+        await speak(
+          'Which contact would you like to call? '
+          'Say mental health hotline, Friend, or emergency services.',
+        );
+      } else {
+        final contact = emergencyContacts.firstWhere(
+          (c) => c.key == initialCallKey,
+          orElse: () => emergencyContacts.first,
+        );
+        onContactTap(contact);
+      }
+    }
   }
 
   Future<void> _loadSavedNumbers() async {
@@ -59,16 +76,18 @@ class EmergencySupportController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _initTts() async {
+  Future<void> _initTts({bool skipWelcome = false}) async {
     await tts.setLanguage('en-US');
     await tts.setSpeechRate(0.45);
     await tts.setVolume(1.0);
-    await Future.delayed(const Duration(milliseconds: 400));
-    await speak(
-      'You are in Emergency Support. Help is available. '
-      'You can say: call mental health hotline, call emergency services, '
-      'or call Friend. Say back to return home.',
-    );
+    if (!skipWelcome) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      await speak(
+        'You are in Emergency Support. Help is available. '
+        'You can say: call mental health hotline, call emergency services, '
+        'or call Friend. Say back to return home.',
+      );
+    }
   }
 
   Future<void> _initStt() async {

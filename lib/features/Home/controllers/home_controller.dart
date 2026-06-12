@@ -8,6 +8,7 @@ import 'package:mindmate/features/emergency_support/screens/emergency_support_pa
 import 'package:mindmate/features/mindfulness/screens/mindfulness_page.dart';
 import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart';
 import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
+import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 
 /// HomeController manages the Voice User Interface (VUI) for the Home Page.
 /// It strictly follows the Rule-Based Spoken Language System Architecture:
@@ -126,8 +127,12 @@ class HomeController extends ChangeNotifier {
     Widget? targetPage;
     String speechResponse = '';
 
+    final callKey = CrisisDetector.detectCallIntent(text);
+
     // NLU: Scanning for keywords
-    if (text.contains('breath') || text.contains('relax') || text.contains('calm') || text.contains('exercise')) {
+    if (callKey != null || CrisisDetector.isCrisis(text)) {
+      intent = 'NAVIGATE_EMERGENCY';
+    } else if (text.contains('breath') || text.contains('relax') || text.contains('calm') || text.contains('exercise')) {
       intent = 'NAVIGATE_BREATHING';
     } else if (text.contains('sleep') || text.contains('rest') || text.contains('bedtime') || text.contains('hygiene') || text.contains('insomnia')) {
       intent = 'NAVIGATE_SLEEP';
@@ -162,7 +167,7 @@ class HomeController extends ChangeNotifier {
         statusLabel = 'Going to Mood Tracking…';
         break;
       case 'NAVIGATE_EMERGENCY':
-        targetPage = const EmergencySupportPage();
+        targetPage = EmergencySupportPage(initialCallKey: callKey);
         speechResponse = 'Opening Emergency Support.';
         statusLabel = 'Going to Emergency Support…';
         break;
