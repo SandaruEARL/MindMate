@@ -6,6 +6,7 @@ import 'package:mindmate/features/mindfulness/services/mindfulness_session_data.
 import 'package:mindmate/features/mindfulness/widgets/mindful_progress_indicator.dart';
 import 'package:mindmate/features/mindfulness/widgets/mindfulness_chat_log.dart';
 import 'package:mindmate/features/mindfulness/widgets/mindfulness_session_card.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class MindfulnessPage extends StatefulWidget {
   const MindfulnessPage({super.key});
@@ -193,7 +194,8 @@ class _MindfulnessPageState extends State<MindfulnessPage>
 
                       // ── Chat log (default view + while playing) ──────────
                       if (_ctrl.activeTab == 'chat' || _ctrl.isPlaying)
-                        MindfulnessChatLog(chatHistory: _ctrl.chatHistory),
+                        MindfulnessChatLog(chatHistory: _ctrl.chatHistory)
+                            .animate().fade(duration: 300.ms).slideY(begin: 0.05),
 
                       // ── Mindfulness sessions list ─────────────────────────
                       if (!_ctrl.isPlaying && _ctrl.activeTab == 'mindfulness') ...[
@@ -205,7 +207,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                             fontWeight: FontWeight.bold,
                             color: cs.onSurface,
                           ),
-                        ),
+                        ).animate().fade().slideY(begin: 0.2),
                         const SizedBox(height: 12),
                         ...kMindfulnessSessions.map((s) =>
                             MindfulnessSessionCard(
@@ -223,7 +225,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                     break;
                                 }
                               },
-                            )),
+                            )).toList().animate(interval: 50.ms).fade(duration: 300.ms, curve: Curves.easeOutQuad).slideY(begin: 0.1, curve: Curves.easeOutQuad),
                       ],
 
                       // ── Guided meditation list ────────────────────────────
@@ -236,7 +238,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                             fontWeight: FontWeight.bold,
                             color: cs.onSurface,
                           ),
-                        ),
+                        ).animate().fade().slideY(begin: 0.2),
                         const SizedBox(height: 12),
                         ...kGuidedMeditationSessions.map((s) =>
                             MindfulnessSessionCard(
@@ -257,7 +259,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                     break;
                                 }
                               },
-                            )),
+                            )).toList().animate(interval: 50.ms).fade(duration: 300.ms, curve: Curves.easeOutQuad).slideY(begin: 0.1, curve: Curves.easeOutQuad),
                       ],
                     ],
                   ),

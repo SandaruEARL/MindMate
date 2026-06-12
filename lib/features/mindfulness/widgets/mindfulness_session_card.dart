@@ -16,53 +16,59 @@ class MindfulnessSessionCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final color = session['color'] as Color;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.2),
-            width: 1,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        splashColor: color.withOpacity(0.2),
+        highlightColor: color.withOpacity(0.1),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: color.withOpacity(0.2),
+              width: 1,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: color.withOpacity(0.15),
-              child: Icon(
-                session['icon'] as IconData,
-                color: color,
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.15),
+                child: Icon(
+                  session['icon'] as IconData,
+                  color: color,
+                ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    session['title'] as String,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session['title'] as String,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    session['subtitle'] as String,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: cs.onSurfaceVariant,
+                    const SizedBox(height: 3),
+                    Text(
+                      session['subtitle'] as String,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(Icons.play_arrow_rounded, color: color.withOpacity(0.5)),
-          ],
+              Icon(Icons.play_arrow_rounded, color: color.withOpacity(0.5)),
+            ],
+          ),
         ),
       ),
     );
