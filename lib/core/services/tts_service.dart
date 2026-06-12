@@ -1,21 +1,4 @@
 // tts_service.dart
-// Offline TTS using flutter_tts package.
-//
-// Fixes in this version:
-//   Fix 14 (revised) — stop() no longer resolves _speakCompleter
-//            directly. Instead it calls _tts.stop() and lets the
-//            setCancelHandler do the resolve. This means
-//            awaitCompletion() genuinely waits for the hardware
-//            audio session to close, not just for the stop() call
-//            to return.
-//   Fix D   — post-completion settle delay (500 ms) inside
-//            awaitCompletion() so the mic never opens before
-//            Android has fully released the audio focus.
-//   Fix E   — speak() now calls awaitCompletion() (not a bare
-//            stop() + 50 ms delay) before starting a new utterance,
-//            so the cancel handler always fires and resolves the old
-//            completer before the new one is created. This prevents
-//            double-utterance races and mid-speech interruptions.
 
 import 'dart:async';
 

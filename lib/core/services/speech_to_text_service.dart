@@ -1,19 +1,4 @@
 // speech_to_text_service.dart
-//
-// Fixes in this version:
-//   Fix A — post-stop settle delay
-//   Fix B — error_busy retry
-//   Fix C — Completer-based result
-//   Fix D — dictation mode
-//   Fix E — localeId removed
-//   Fix F — partialResults: true
-//   Fix G — listenFor 15 s, pauseFor 3 s, safety timeout 18 s
-//   Fix H — error fallback returns partial
-//   Fix I — forceReset(): cancels stale session + re-initialises plugin,
-//            called by the notifier on every screen entry so a previous
-//            session's native audio lock is fully released before TTS starts.
-//   Fix J — listeners wired BEFORE listen() to eliminate the race window
-//            where status 'done' fires before statusListener is assigned.
 
 import 'dart:async';
 
@@ -129,10 +114,10 @@ class SpeechToTextService {
 
     await _speech.listen(
       onResult: (result) {
-        partial = result.recognizedWords;           // Fix F
+        partial = result.recognizedWords;
         if (result.finalResult) resolve(partial);
       },
-      partialResults: true,                         // Fix F
+      partialResults: true,
       listenFor:      const Duration(seconds: 15),  // Fix G
       pauseFor:       const Duration(seconds: 3),   // Fix G
       listenMode:     stt.ListenMode.dictation,     // Fix D
