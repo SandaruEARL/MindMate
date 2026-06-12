@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.11.5
+  sdk: ^3.10.0
 
 dependencies:
   cupertino_icons: ^1.0.8
@@ -21,6 +21,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   http: ^1.6.0
   flutter_animate: ^4.5.0
+  audioplayers: ^6.7.1
   url_launcher: ^6.2.0
   flutter_phone_direct_caller: ^2.1.1
   shared_preferences: ^2.3.2
@@ -35,3 +36,4 @@ flutter:
   assets:
     - .env
     - assets/images/
+    - assets/sounds/

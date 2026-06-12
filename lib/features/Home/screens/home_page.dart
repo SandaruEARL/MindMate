@@ -52,11 +52,11 @@ const _navItems = [
   ),
   _NavItem(
     icon: Icons.self_improvement_rounded,
-    label: 'Mindfulness',
+    label: 'Mindfulness\n& Meditation',
     color: Color(0xFF3F51B5), // Amber/Yellow
     keywords: ['mindful', 'meditat', 'aware', 'present'],
     page: MindfulnessPage(),
-    speech: 'Opening Mindfulness.',
+    speech: '',
   ),
   _NavItem(
     icon: Icons.mood_rounded,
@@ -149,6 +149,9 @@ class _HomePageState extends State<HomePage> {
       await _speak('Speech recognition is not available on this device.');
       return;
     }
+    
+    // Forcefully reset navigation state if user interrupts
+    _isNavigating = false;
     await _tts.stop();
     setState(() {
       _isListening = true;
@@ -157,13 +160,24 @@ class _HomePageState extends State<HomePage> {
     });
     await _stt.listen(
       onResult: (r) {
-        if (mounted) setState(() => _recognizedText = r.recognizedWords);
+        if (mounted) {
+          setState(() => _recognizedText = r.recognizedWords);
+          // Auto-stop when the engine confirms the utterance is complete
+          if (r.finalResult && !_isNavigating) {
+            _stopListening();
+          }
+        }
       },
-      listenFor: const Duration(seconds: 20),
+      listenOptions: stt.SpeechListenOptions(
+        listenMode: stt.ListenMode.dictation,
+        cancelOnError: true,
+        partialResults: true,
+        autoPunctuation: false,
+        enableHapticFeedback: true,
+      ),
+      listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 4),
       localeId: 'en_US',
-      cancelOnError: true,
-      partialResults: true,
     );
   }
 
@@ -177,7 +191,14 @@ class _HomePageState extends State<HomePage> {
         _statusLabel = 'Processing…';
       });
     }
-    await _navigate(_recognizedText.toLowerCase());
+    
+    if (_recognizedText.isNotEmpty) {
+      final textToProcess = _recognizedText.toLowerCase();
+      _recognizedText = ''; // Clear early to prevent duplicate async triggers
+      await _navigate(textToProcess);
+    }
+    
+    _isNavigating = false;
     _isNavigating = false;
   }
 
@@ -217,7 +238,9 @@ class _HomePageState extends State<HomePage> {
   }) async {
     if (!mounted) return;
     setState(() => _statusLabel = label);
-    await _speak(speech);
+    if (speech.isNotEmpty) {
+      await _speak(speech);
+    }
     if (mounted) {
       await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
       await _speak('You are back on the home page.');
