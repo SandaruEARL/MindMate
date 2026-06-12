@@ -10,6 +10,7 @@ import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart'
 import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
+import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
 
 /// HomeController manages the Voice User Interface (VUI) for the Home Page.
 /// It strictly follows the Rule-Based Spoken Language System Architecture:
@@ -130,12 +131,15 @@ class HomeController extends ChangeNotifier {
 
     final callKey = CrisisDetector.detectCallIntent(text);
     final breathingExId = BreathingDetector.detectExerciseIntent(text);
+    final mindfulnessId = MindfulnessDetector.detectSessionIntent(text);
 
     // NLU: Scanning for keywords
     if (callKey != null || CrisisDetector.isCrisis(text)) {
       intent = 'NAVIGATE_EMERGENCY';
     } else if (breathingExId != null) {
       intent = 'NAVIGATE_BREATHING_EXERCISE';
+    } else if (mindfulnessId != null) {
+      intent = 'NAVIGATE_MINDFULNESS_SESSION';
     } else if (text.contains('breath') || text.contains('relax') || text.contains('calm') || text.contains('exercise')) {
       intent = 'NAVIGATE_BREATHING';
     } else if (text.contains('sleep') || text.contains('rest') || text.contains('bedtime') || text.contains('hygiene') || text.contains('insomnia')) {
@@ -164,6 +168,11 @@ class HomeController extends ChangeNotifier {
         targetPage = const SleepVuiScreen();
         speechResponse = 'Opening Sleep Hygiene.';
         statusLabel = 'Going to Sleep Hygiene…';
+        break;
+      case 'NAVIGATE_MINDFULNESS_SESSION':
+        targetPage = MindfulnessPage(initialSessionId: mindfulnessId);
+        speechResponse = 'Starting mindfulness session.';
+        statusLabel = 'Going to Mindfulness…';
         break;
       case 'NAVIGATE_MINDFULNESS':
         targetPage = const MindfulnessPage();

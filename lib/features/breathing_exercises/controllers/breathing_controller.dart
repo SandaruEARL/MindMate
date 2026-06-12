@@ -10,6 +10,7 @@ import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart'
 import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
+import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
 
 /// BreathingController manages the Voice User Interface (VUI) for Breathing Exercises.
 /// It strictly follows the Rule-Based Spoken Language System Architecture:
@@ -212,10 +213,13 @@ class BreathingController extends ChangeNotifier {
     Map<String, dynamic>? exerciseToStart;
 
     final callKey = CrisisDetector.detectCallIntent(text);
+    final mindfulnessId = MindfulnessDetector.detectSessionIntent(text);
 
     // NLU: Navigation Keywords
     if (callKey != null || CrisisDetector.isCrisis(text)) {
       intent = 'NAVIGATE_EMERGENCY';
+    } else if (mindfulnessId != null) {
+      intent = 'NAVIGATE_MINDFULNESS_SESSION';
     } else if (text.contains('home') || text.contains('go back') || text.contains('exit')) {
       intent = 'NAVIGATE_HOME';
     } else if (text.contains('emergency') || text.contains('crisis')) {
@@ -256,6 +260,11 @@ class BreathingController extends ChangeNotifier {
         await _stopExerciseForNavigation();
         navigationTarget = const SleepVuiScreen();
         await speak('Opening Sleep Hygiene.');
+        break;
+      case 'NAVIGATE_MINDFULNESS_SESSION':
+        await _stopExerciseForNavigation();
+        navigationTarget = MindfulnessPage(initialSessionId: mindfulnessId);
+        await speak('Starting mindfulness session.');
         break;
       case 'NAVIGATE_MINDFULNESS':
         await _stopExerciseForNavigation();

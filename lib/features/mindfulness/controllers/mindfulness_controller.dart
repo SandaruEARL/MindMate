@@ -5,7 +5,10 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:mindmate/features/emergency_support/screens/emergency_support_page.dart';
 import 'package:mindmate/features/breathing_exercises/screens/breathing_exercises_page.dart';
-import 'package:mindmate/features/mindfulness/services/mindfulness_session_data.dart';
+import 'package:mindmate/core/services/speech_to_text_service.dart';
+import 'package:mindmate/core/services/tts_service.dart';
+import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
+import '../services/mindfulness_session_data.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
 
@@ -70,7 +73,7 @@ class MindfulnessController extends ChangeNotifier {
 
   // ── Initialisation ────────────────────────────────────────────────────────
 
-  Future<void> init() async {
+  Future<void> init({String? initialSessionId}) async {
     progressController = AnimationController(
       vsync: vsync,
       duration: const Duration(minutes: 5),
@@ -81,11 +84,16 @@ class MindfulnessController extends ChangeNotifier {
       }
     });
 
-    await _initTts();
+    await _initTts(skipGreeting: initialSessionId != null);
     await _initStt();
+
+    if (initialSessionId != null) {
+      recommendedSession = initialSessionId;
+      await _startRecommendedSession();
+    }
   }
 
-  Future<void> _initTts() async {
+  Future<void> _initTts({bool skipGreeting = false}) async {
     await tts.setLanguage('en-US');
     await _restoreNormalTtsSettings();
     tts.setErrorHandler((msg) {
@@ -94,15 +102,17 @@ class MindfulnessController extends ChangeNotifier {
     });
     await tts.awaitSpeakCompletion(true);
     tts.setCompletionHandler(() {});
-    await Future.delayed(const Duration(milliseconds: 300));
+    if (!skipGreeting) {
+      await Future.delayed(const Duration(milliseconds: 300));
 
-    final allTitles = [
-      ...kMindfulnessSessions.map((s) => s['title'] as String),
-      ...kGuidedMeditationSessions.map((s) => s['title'] as String),
-    ].join(', ');
-    await tts.speak(
-      'You are in the Mindfulness and Meditation page. Choose a session. Available sessions are: $allTitles',
-    );
+      final allTitles = [
+        ...kMindfulnessSessions.map((s) => s['title'] as String),
+        ...kGuidedMeditationSessions.map((s) => s['title'] as String),
+      ].join(', ');
+      await tts.speak(
+        'You are in the Mindfulness and Meditation page. Choose a session. Available sessions are: $allTitles',
+      );
+    }
   }
 
   Future<void> _initStt() async {
@@ -313,34 +323,14 @@ class MindfulnessController extends ChangeNotifier {
     // 4. State: awaiting_meditation_choice (manual selection by name)
     if (currentState == 'awaiting_meditation_choice') {
       currentState = 'idle';
-      if (text.contains('body') || text.contains('scan') || text.contains('one') || text.contains('first')) {
+      final detectedSession = MindfulnessDetector.detectSessionIntent(text);
+      if (detectedSession != null) {
+        recommendedSession = detectedSession;
+        await _startRecommendedSession();
+      } else if (text.contains('body') || text.contains('scan') || text.contains('one') || text.contains('first')) {
         chatHistory.add(MindfulnessMessage('Starting Body Scan…', isUser: false));
         notifyListeners();
         await runBodyScan();
-      } else if (text.contains('loving') || text.contains('kindness') || text.contains('second') || text.contains('compassion')) {
-        chatHistory.add(MindfulnessMessage('Starting Loving Kindness…', isUser: false));
-        notifyListeners();
-        await runLovingKindness();
-      } else if (text.contains('anxiety') || text.contains('third') || text.contains('reduction')) {
-        chatHistory.add(MindfulnessMessage('Starting Anxiety Reduction…', isUser: false));
-        notifyListeners();
-        await runAnxietyReduction();
-      } else if (text.contains('focus') || text.contains('concentration') || text.contains('fourth')) {
-        chatHistory.add(MindfulnessMessage('Starting Focus & Concentration…', isUser: false));
-        notifyListeners();
-        await runFocusConcentration();
-      } else if (text.contains('gratitude') || text.contains('thankful')) {
-        chatHistory.add(MindfulnessMessage('Starting Gratitude Meditation…', isUser: false));
-        notifyListeners();
-        await runGratitudeMeditation();
-      } else if (text.contains('observation') || text.contains('mindful')) {
-        chatHistory.add(MindfulnessMessage('Starting Mindful Observation…', isUser: false));
-        notifyListeners();
-        await runMindfulObservation();
-      } else if (text.contains('beginner')) {
-        chatHistory.add(MindfulnessMessage('Starting Beginner Meditation…', isUser: false));
-        notifyListeners();
-        await runBeginnerMeditation();
       } else {
         await speakConversationalResponse(
           'I did not catch which session you want. You can say Body Scan, Loving Kindness, Anxiety Reduction, Focus, Gratitude, Mindful Observation, or Beginner Meditation.',
@@ -587,35 +577,16 @@ class MindfulnessController extends ChangeNotifier {
     }
 
     // ── Direct session start commands ────────────────────────────────────────
-    if (text.contains('body') || text.contains('scan')) {
-      statusLabel = 'Starting Body Scan…';
+    final detectedSession = MindfulnessDetector.detectSessionIntent(text);
+    if (detectedSession != null) {
+      statusLabel = 'Starting session…';
       notifyListeners();
-      await runBodyScan();
-    } else if (text.contains('observation') || text.contains('present') || text.contains('look')) {
-      statusLabel = 'Starting Mindful Observation…';
-      notifyListeners();
-      await runMindfulObservation();
-    } else if (text.contains('loving') || text.contains('kindness') || text.contains('compassion') || text.contains('love')) {
-      statusLabel = 'Starting Loving Kindness…';
-      notifyListeners();
-      await runLovingKindness();
-    } else if (text.contains('beginner') || (text.contains('start') && text.contains('meditation'))) {
-      statusLabel = 'Starting Beginner Meditation…';
-      notifyListeners();
-      await runBeginnerMeditation();
-    } else if (text.contains('anxiety') || text.contains('reduction')) {
-      statusLabel = 'Starting Anxiety Reduction…';
-      notifyListeners();
-      await runAnxietyReduction();
-    } else if (text.contains('focus') || text.contains('concentration') || text.contains('attention')) {
-      statusLabel = 'Starting Focus & Concentration…';
-      notifyListeners();
-      await runFocusConcentration();
-    } else if (text.contains('gratitude') || text.contains('thankful') || text.contains('blessings')) {
-      statusLabel = 'Starting Gratitude Meditation…';
-      notifyListeners();
-      await runGratitudeMeditation();
-    } else if (text.contains('stop') || text.contains('pause') || text.contains('cancel')) {
+      recommendedSession = detectedSession;
+      await _startRecommendedSession();
+      return;
+    }
+    
+    if (text.contains('stop') || text.contains('pause') || text.contains('cancel')) {
       statusLabel = 'Stopping practice…';
       notifyListeners();
       await stopSession();

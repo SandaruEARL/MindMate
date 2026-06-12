@@ -9,7 +9,8 @@ import 'package:mindmate/features/mindfulness/widgets/mindfulness_session_card.d
 import 'package:flutter_animate/flutter_animate.dart';
 
 class MindfulnessPage extends StatefulWidget {
-  const MindfulnessPage({super.key});
+  final String? initialSessionId;
+  const MindfulnessPage({super.key, this.initialSessionId});
 
   @override
   State<MindfulnessPage> createState() => _MindfulnessPageState();
@@ -26,7 +27,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     _ctrl.addListener(() {
       if (mounted) setState(() {});
     });
-    _ctrl.init();
+    _ctrl.init(initialSessionId: widget.initialSessionId);
   }
 
   @override

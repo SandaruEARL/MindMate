@@ -9,6 +9,7 @@ import 'package:mindmate/features/mindfulness/screens/mindfulness_page.dart';
 import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
+import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
 
 // ── Mood Data Models ────────────────────────────────────────────────────────
 
@@ -249,12 +250,15 @@ class MoodTrackingController extends ChangeNotifier {
 
     final callKey = CrisisDetector.detectCallIntent(t);
     final breathingExId = BreathingDetector.detectExerciseIntent(t);
+    final mindfulnessId = MindfulnessDetector.detectSessionIntent(t);
 
     // NLU: Navigation Keywords
     if (callKey != null || CrisisDetector.isCrisis(t)) {
       intent = 'NAVIGATE_EMERGENCY';
     } else if (breathingExId != null) {
       intent = 'NAVIGATE_BREATHING_EXERCISE';
+    } else if (mindfulnessId != null) {
+      intent = 'NAVIGATE_MINDFULNESS_SESSION';
     } else if (t.contains('home') || t.contains('go back') || t.contains('exit')) {
       intent = 'NAVIGATE_HOME';
     } else if (t.contains('emergency') || t.contains('crisis') || t.contains('suicide') || t.contains('kill myself') || t.contains('hurt myself')) {
@@ -283,6 +287,11 @@ class MoodTrackingController extends ChangeNotifier {
         case 'NAVIGATE_SLEEP':
           targetPage = const SleepVuiScreen();
           await speak('Opening Sleep Hygiene.');
+          break;
+        case 'NAVIGATE_MINDFULNESS_SESSION':
+          targetPage = MindfulnessPage(initialSessionId: mindfulnessId);
+          _addAssistantTurn('Starting mindfulness session.', isPreset: false);
+          await speak('Starting mindfulness session.');
           break;
         case 'NAVIGATE_MINDFULNESS':
           targetPage = const MindfulnessPage();

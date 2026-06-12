@@ -9,6 +9,7 @@ import '../../../core/services/speech_to_text_service.dart';
 import '../../../core/services/tts_service.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
+import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
 
 
 /// SleepController holds all business logic, state, and VUI handling
@@ -448,6 +449,22 @@ class SleepController extends ChangeNotifier {
         Navigator.push(
           _context!,
           MaterialPageRoute(builder: (_) => BreathingExercisesPage(initialExerciseId: breathingExId)),
+        );
+      }
+      return;
+    }
+
+    // ── 0.6. Mindfulness Sessions global routing ────────────────────────────────
+    final mindfulnessId = MindfulnessDetector.detectSessionIntent(text);
+    if (mindfulnessId != null) {
+      _consecutiveFallbacks = 0;
+      statusLabel = 'Redirecting to Mindfulness…';
+      notifyListeners();
+      await _speak('Starting mindfulness session.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(
+          _context!,
+          MaterialPageRoute(builder: (_) => MindfulnessPage(initialSessionId: mindfulnessId)),
         );
       }
       return;
