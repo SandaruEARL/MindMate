@@ -1,30 +1,77 @@
-# 🧠 MindMate - Mental Health & Wellbeing Support App
+# 🧠 MindMate
 
-![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white)
-![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+<p align="center">
+  <b>Voice-Enabled Mental Health & Wellbeing Support App</b><br>
+  Helping young adults build healthier habits through natural voice interactions.
+</p>
 
-> A mobile voice-enabled mental health and wellbeing support application for young adults (18-30)
-
-## ✨ About MindMate
-
-MindMate is a **Flutter-based Voice User Interface (VUI) application** designed to provide accessible, on-demand mental health guidance and emotional support. Built with a focus on **empathy, accessibility, and user-centered design**, MindMate empowers users to take control of their mental wellbeing through natural voice conversations.
-
-## 👥 Team Members & Features
-
-| ID | Member | Feature |
-|---|---|---|
-| 😴 CT 2020/012 | **Herman P.H.S.L** | Sleep hygiene tips & bedtime routines |
-| 😊 CT 2020/027 | **Kumara. J.A.C.D.** | Mood tracking & daily emotional check-ins |
-| 🧘 CT 2020/046 | **Dangampola E.R** | Mindfulness & meditation guidance |
-| 🆘 CT 2020/075 | **Channa** | Professional help & emergency contacts |
-| 🫁 CT 2020/086 | **Jayawickrama G.K.W.** | Breathing exercises & guided relaxation |
-
-## 📚 Course & Assignment
-
-**Course**: SWST 44042 - Speech Interfaces (2023/2024)  
-**Assessment**: Continuous Assessment - Group Work
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white">
+  <img src="https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge">
+</p>
 
 ---
 
-**Built with ❤️ for mental health & wellbeing** 🌟
+## ✨ Overview
+
+MindMate is a Flutter-based **Voice User Interface (VUI)** application designed to provide accessible mental health and wellbeing support for young adults aged 18–30.
+
+The app enables users to interact through natural voice conversations and receive guidance on emotional wellbeing, mindfulness, relaxation, sleep improvement, and professional support resources.
+
+---
+
+## 🎯 Key Features
+
+- 😊 Mood Tracking & Daily Check-ins
+- 🧘 Mindfulness & Meditation Guidance
+- 🫁 Breathing Exercises & Relaxation Techniques
+- 😴 Sleep Hygiene & Bedtime Routines
+- 🆘 Professional Help & Emergency Resources
+- 🎤 Voice-First User Experience
+
+---
+
+## 👥 Team Contributions
+
+| Student ID | Team Member | Feature |
+|------------|------------|----------|
+| CT2020/012 | Herman P.H.S.L | 😴 Sleep Hygiene & Bedtime Routines |
+| CT2020/027 | Kumara J.A.C.D | 😊 Mood Tracking & Emotional Check-ins |
+| CT2020/046 | Dangampola E.R | 🧘 Mindfulness & Meditation Guidance |
+| CT2020/075 | Channa | 🆘 Professional Help & Emergency Contacts |
+| CT2020/086 | Jayawickrama G.K.W | 🫁 Breathing Exercises & Guided Relaxation |
+
+---
+
+## 📚 Academic Information
+
+| Item | Details |
+|--------|---------|
+| Course | SWST 44042 – Speech Interfaces |
+| Academic Year | 2023 / 2024 |
+| Assessment | Continuous Assessment – Group Project |
+
+---
+
+## 📱 Application Preview
+
+<p align="center">
+  <img width="578" height="774" alt="Screenshot 2026-06-13 at 22 25 05" src="https://github.com/user-attachments/assets/f7a83455-cf96-41df-b468-fb7574dce74a" />
+</p>
+
+---
+
+## 🛠️ Built With
+
+- Flutter
+- Dart
+- Speech Recognition
+- Text-to-Speech (TTS)
+- Voice User Interface (VUI) Design Principles
+
+---
+
+<p align="center">
+  Built with ❤️ to support mental health and wellbeing.
+</p>
