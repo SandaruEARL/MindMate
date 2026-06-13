@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mindmate/features/emergency_support/widget/voice_mic_button_emergency_support.dart';
+import 'package:mindmate/core/widgets/voice_mic_button.dart';
 import '../models/emergency_contact.dart';
 import '../controllers/emergency_support_controller.dart';
 
@@ -76,6 +76,18 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
         return Scaffold(
           backgroundColor: cs.surface,
           appBar: AppBar(
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 12.0, top: 8.0, bottom: 8.0),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                style: IconButton.styleFrom(
+                  backgroundColor: const Color(0xFF3F51B5),
+                  foregroundColor: Colors.white,
+                  shape: const CircleBorder(),
+                ),
+                icon: const Icon(Icons.arrow_back_rounded, size: 20),
+              ),
+            ),
             title: const Text(
               'Emergency Support',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -246,7 +258,7 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                 left: 0,
                 right: 0,
                 bottom: 32,
-                child: VoiceMicButtonEmergencySupport(
+                child: VoiceMicButton(
                   isListening: _controller.isListening,
                   onTap: _controller.onMicTap,
                   statusLabel: _controller.statusLabel,

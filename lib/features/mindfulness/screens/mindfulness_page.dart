@@ -104,6 +104,18 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12.0, top: 8.0, bottom: 8.0),
+          child: IconButton(
+            onPressed: () => Navigator.pop(context),
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFF3F51B5),
+              foregroundColor: Colors.white,
+              shape: const CircleBorder(),
+            ),
+            icon: const Icon(Icons.arrow_back_rounded, size: 20),
+          ),
+        ),
         title: const Text('Mindfulness & Meditation'),
         backgroundColor: Colors.transparent,
         elevation: 0,
