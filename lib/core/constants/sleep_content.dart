@@ -5,10 +5,8 @@
 // Architecture note (current):
 //   The engine is a fast pre-filter only. It handles crisis, handoff,
 //   exit/entry routing, meta-intents (repeat / affirmation / negation),
-//   and the bedtime routine structured card. ALL prose responses go to
-//   Gemini — intentMessages, tips, tone prefixes, and issue-filtered
-//   suggestions have been removed entirely.
-//
+//   exit/entry routing, meta-intents (repeat / affirmation / negation),
+//   and the bedtime routine structured card.
 //   What remains:
 //     • Types: SleepIntent, EmotionalTone, SleepResponse, SleepTip,
 //              ChatMessage, IntentLog
@@ -18,7 +16,6 @@
 //               help, affirmation, negation, unknown)
 //     • Chips: followUpSuggestions
 //     • Routine: bedtimeRoutineSteps
-//     • Gemini context: ageContext()
 
 import 'dart:math';
 
@@ -188,7 +185,7 @@ class SleepCorpus {
   ];
 
   // ── Intent keyword map ────────────────────────────────────────
-  // Used for routing only. Prose responses come from Gemini.
+  // Used for routing only.
   static const Map<SleepIntent, List<String>> intentKeywords = {
 
     SleepIntent.greeting: [
@@ -369,7 +366,6 @@ class SleepCorpus {
   // 3. META-INTENT RESPONSE VARIANTS
   // Only used for: greeting, gratitude, help, affirmation,
   //               negation, unknown.
-  // All topic intents (cantSleep, sleepTips, etc.) go to Gemini.
   // ════════════════════════════════════════════════════════════════
 
   static const Map<SleepIntent, List<String>> responseVariants = {
@@ -497,9 +493,8 @@ class SleepCorpus {
   ];
 
   // ════════════════════════════════════════════════════════════════
-  // 6. GEMINI CONTEXT STRING
-  // Injected into Gemini system prompt after intake completes.
-  // Gives Gemini age + issue-type context so it can tailor tone.
+  // 6. LOCAL CONTEXT STRING
+  // Gives age + issue-type context.
   // ════════════════════════════════════════════════════════════════
 
   static String ageContext(int age, String? issueType) {

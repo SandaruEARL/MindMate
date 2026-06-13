@@ -7,6 +7,9 @@ import 'package:mindmate/features/mindfulness/screens/mindfulness_page.dart';
 import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart';
 import '../../../core/services/speech_to_text_service.dart';
 import '../../../core/services/tts_service.dart';
+import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
+import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
+import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
 
 
 /// SleepController holds all business logic, state, and VUI handling
@@ -416,15 +419,8 @@ class SleepController extends ChangeNotifier {
     }
 
     // ── 0. Crisis detection — always first, even during intake ────────────────
-    if (text.contains('kill myself')  ||
-        text.contains('suicide')      ||
-        text.contains('hurt myself')  ||
-        text.contains('end my life')  ||
-        text.contains('crisis')       ||
-        text.contains('emergency')    ||
-        text.contains('self harm')    ||
-        text.contains('cutting')      ||
-        text.contains('harming')) {
+    final callKey = CrisisDetector.detectCallIntent(text);
+    if (callKey != null || CrisisDetector.isCrisis(text)) {
       _consecutiveFallbacks = 0;
       statusLabel = 'Redirecting to Emergency Support…';
       notifyListeners();
@@ -436,8 +432,89 @@ class SleepController extends ChangeNotifier {
       if (_context != null && _context!.mounted) {
         Navigator.push(
           _context!,
-          MaterialPageRoute(builder: (_) => const EmergencySupportPage()),
+          MaterialPageRoute(builder: (_) => EmergencySupportPage(initialCallKey: callKey)),
         );
+      }
+      return;
+    }
+
+    // ── 0.5. Breathing Exercises global routing ────────────────────────────────
+    final breathingExId = BreathingDetector.detectExerciseIntent(text);
+    if (breathingExId != null) {
+      _consecutiveFallbacks = 0;
+      statusLabel = 'Redirecting to Breathing Exercises…';
+      notifyListeners();
+      await _speak('Starting breathing exercise.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(
+          _context!,
+          MaterialPageRoute(builder: (_) => BreathingExercisesPage(initialExerciseId: breathingExId)),
+        );
+      }
+      return;
+    }
+
+    // ── 0.6. Mindfulness Sessions global routing ────────────────────────────────
+    final mindfulnessId = MindfulnessDetector.detectSessionIntent(text);
+    if (mindfulnessId != null) {
+      _consecutiveFallbacks = 0;
+      statusLabel = 'Redirecting to Mindfulness…';
+      notifyListeners();
+      await _speak('Starting mindfulness session.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(
+          _context!,
+          MaterialPageRoute(builder: (_) => MindfulnessPage(initialSessionId: mindfulnessId)),
+        );
+      }
+      return;
+    }
+
+    // ── 0.7. CROSS-MODULE MENTIONS — navigate to other modules ────────────────
+    if (text.contains('breath') || text.contains('relax') || text.contains('calm') || text.contains('exercise')) {
+      _consecutiveFallbacks = 0;
+      statusLabel = 'Redirecting to Breathing Exercises…';
+      notifyListeners();
+      chatHistory.add(const SleepMessage('Opening Breathing Exercises.', isUser: false));
+      ttsService.speak('Opening Breathing Exercises.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const BreathingExercisesPage()));
+      }
+      return;
+    }
+
+    if (text.contains('mindful') || text.contains('meditat') || text.contains('aware') || text.contains('present')) {
+      _consecutiveFallbacks = 0;
+      statusLabel = 'Redirecting to Mindfulness…';
+      notifyListeners();
+      chatHistory.add(const SleepMessage('Opening Mindfulness.', isUser: false));
+      ttsService.speak('Opening Mindfulness.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const MindfulnessPage()));
+      }
+      return;
+    }
+
+    if (text.contains('mood') || text.contains('feeling') || text.contains('emotion') || text.contains('track')) {
+      _consecutiveFallbacks = 0;
+      statusLabel = 'Redirecting to Mood Tracking…';
+      notifyListeners();
+      chatHistory.add(const SleepMessage('Opening Mood Tracking.', isUser: false));
+      ttsService.speak('Opening Mood Tracking.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const MoodTrackingPage()));
+      }
+      return;
+    }
+
+    if (text.contains('emergency') || text.contains('crisis') || text.contains('urgent') || text.contains('support') || text.contains('call')) {
+      _consecutiveFallbacks = 0;
+      statusLabel = 'Redirecting to Emergency Support…';
+      notifyListeners();
+      chatHistory.add(const SleepMessage('Opening Emergency Support.', isUser: false));
+      ttsService.speak('Opening Emergency Support.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const EmergencySupportPage()));
       }
       return;
     }
@@ -685,58 +762,7 @@ class SleepController extends ChangeNotifier {
       await _speak('$ack $bridge');
       return;
     }
-
-
-    // ── 5. CROSS-MODULE MENTIONS — stay in scope ──────────────────────────────
-    // We don't navigate away. We answer the sleep-relevant part inline.
-
-    if (text.contains('breathing')       ||
-        text.contains('breathe')         ||
-        text.contains('breath exercise') ||
-        text.contains('box breathing')) {
-      _consecutiveFallbacks = 0;
-      final prefix = _contextPrefix();
-      final ack  = "Breathing techniques are one of the most effective tools for sleep onset.";
-      final core = "Try 4-7-8 breathing: inhale for 4 seconds, hold for 7, exhale slowly for 8. Repeat 3 or 4 times.";
-      final bridge = _join(core,
-          "it activates your parasympathetic nervous system — your body's built-in off switch.",
-          type: 'elaboration');
-      await _speak('$prefix$ack $bridge');
-      return;
-    }
-
-    if (text.contains('mindfulness')        ||
-        text.contains('meditation')         ||
-        text.contains('meditate')           ||
-        text.contains('body scan')          ||
-        text.contains('guided meditation')) {
-      _consecutiveFallbacks = 0;
-      final prefix = _contextPrefix();
-      final ack  = "A short mindfulness practice before bed is one of the best things for sleep.";
-      final core = "Try a body scan: lie down, close your eyes, and slowly move attention from your toes upward, releasing tension in each part.";
-      final bridge = _join(core,
-          "doing this nightly trains your nervous system to associate bed with relaxation.",
-          type: 'reason');
-      await _speak('$prefix$ack $bridge');
-      return;
-    }
-
-    if (text.contains('track my mood')      ||
-        text.contains('log my mood')         ||
-        text.contains('mood and sleep')      ||
-        text.contains('mood affect sleep')   ||
-        text.contains('sleep affect mood')   ||
-        text.contains('mood tracker')        ||
-        text.contains('how am i feeling')) {
-      _consecutiveFallbacks = 0;
-      await _speak(
-        "Mood and sleep are deeply linked. Poor sleep raises cortisol and lowers emotional resilience, "
-            "while stress and low mood make it harder to switch off at night. "
-            "If you notice you're struggling emotionally, a consistent bedtime routine helps stabilise both.",
-      );
-      return;
-    }
-
+    
     // ── 6. SYMPTOM / STATE intents ─────────────────────────────────────────
     // These use _hasWord() for short emotional keywords so that a bare word
     // like "tired" in "what is sleep" can never fire here if the question-form
