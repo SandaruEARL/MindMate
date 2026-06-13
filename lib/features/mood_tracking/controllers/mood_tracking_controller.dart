@@ -261,13 +261,13 @@ class MoodTrackingController extends ChangeNotifier {
       intent = 'NAVIGATE_MINDFULNESS_SESSION';
     } else if (t.contains('home') || t.contains('go back') || t.contains('exit')) {
       intent = 'NAVIGATE_HOME';
-    } else if (t.contains('emergency') || t.contains('crisis') || t.contains('suicide') || t.contains('kill myself') || t.contains('hurt myself')) {
+    } else if (t.contains('emergency') || t.contains('crisis') || t.contains('suicide') || t.contains('kill myself') || t.contains('hurt myself') || t.contains('urgent') || t.contains('support') || t.contains('call')) {
       intent = 'NAVIGATE_EMERGENCY';
-    } else if (t.contains('sleep') || t.contains('bedtime')) {
+    } else if (t.contains('sleep') || t.contains('rest') || t.contains('bedtime') || t.contains('hygiene') || t.contains('insomnia')) {
       intent = 'NAVIGATE_SLEEP';
-    } else if (t.contains('mindful') || t.contains('meditat')) {
+    } else if (t.contains('mindful') || t.contains('meditat') || t.contains('aware') || t.contains('present')) {
       intent = 'NAVIGATE_MINDFULNESS';
-    } else if (t.contains('breath') || t.contains('relax') || t.contains('cant breathe') || t.contains('panic')) {
+    } else if (t.contains('breath') || t.contains('relax') || t.contains('cant breathe') || t.contains('panic') || t.contains('calm') || t.contains('exercise')) {
       intent = 'NAVIGATE_BREATHING';
     }
 
@@ -276,36 +276,35 @@ class MoodTrackingController extends ChangeNotifier {
       await tts.stop();
       switch (intent) {
         case 'NAVIGATE_HOME':
-          await speak('Going back to the home page.');
+          speak('Going back to the home page.');
           if (_context != null && _context!.mounted) Navigator.of(_context!).popUntil((r) => r.isFirst);
           return;
         case 'NAVIGATE_EMERGENCY':
           targetPage = EmergencySupportPage(initialCallKey: callKey);
           _addAssistantTurn('I can hear that you are really struggling. Taking you to Emergency Support now.', isPreset: false);
-          await speak('Taking you to Emergency Support now.');
+          speak('Taking you to Emergency Support now.');
           break;
         case 'NAVIGATE_SLEEP':
           targetPage = const SleepVuiScreen();
-          await speak('Opening Sleep Hygiene.');
+          speak('Opening Sleep Hygiene.');
           break;
         case 'NAVIGATE_MINDFULNESS_SESSION':
           targetPage = MindfulnessPage(initialSessionId: mindfulnessId);
           _addAssistantTurn('Starting mindfulness session.', isPreset: false);
-          await speak('Starting mindfulness session.');
+          speak('Starting mindfulness session.');
           break;
         case 'NAVIGATE_MINDFULNESS':
           targetPage = const MindfulnessPage();
-          await speak('Opening Mindfulness.');
+          speak('Opening Mindfulness.');
           break;
         case 'NAVIGATE_BREATHING_EXERCISE':
           targetPage = BreathingExercisesPage(initialExerciseId: breathingExId);
           _addAssistantTurn('Starting breathing exercise.', isPreset: false);
-          await speak('Starting breathing exercise.');
+          speak('Starting breathing exercise.');
           break;
         case 'NAVIGATE_BREATHING':
           targetPage = const BreathingExercisesPage();
-          _addAssistantTurn('Let me take you to Breathing Exercises.', isPreset: false);
-          await speak('Let me take you to Breathing Exercises.');
+          speak('Opening Breathing Exercises.');
           break;
       }
       if (_context != null && _context!.mounted && targetPage != null) {

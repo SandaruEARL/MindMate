@@ -5,6 +5,8 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:mindmate/features/emergency_support/screens/emergency_support_page.dart';
 import 'package:mindmate/features/breathing_exercises/screens/breathing_exercises_page.dart';
+import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart';
+import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
 import 'package:mindmate/core/services/speech_to_text_service.dart';
 import 'package:mindmate/core/services/tts_service.dart';
 import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
@@ -256,6 +258,47 @@ class MindfulnessController extends ChangeNotifier {
           _context!,
           MaterialPageRoute(builder: (_) => BreathingExercisesPage(initialExerciseId: breathingExId)),
         );
+      }
+      return;
+    }
+
+    // 1c. CROSS-MODULE MENTIONS (Generic Navigation)
+    if (text.contains('sleep') || text.contains('rest') || text.contains('bedtime') || text.contains('hygiene') || text.contains('insomnia')) {
+      statusLabel = 'Redirecting to Sleep Hygiene…';
+      notifyListeners();
+      tts.speak('Opening Sleep Hygiene.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const SleepVuiScreen()));
+      }
+      return;
+    }
+
+    if (text.contains('mood') || text.contains('feeling') || text.contains('emotion') || text.contains('track')) {
+      statusLabel = 'Redirecting to Mood Tracking…';
+      notifyListeners();
+      tts.speak('Opening Mood Tracking.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const MoodTrackingPage()));
+      }
+      return;
+    }
+
+    if (text.contains('breath') || text.contains('relax') || text.contains('calm') || text.contains('exercise')) {
+      statusLabel = 'Redirecting to Breathing Exercises…';
+      notifyListeners();
+      tts.speak('Opening Breathing Exercises.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const BreathingExercisesPage()));
+      }
+      return;
+    }
+
+    if (text.contains('emergency') || text.contains('crisis') || text.contains('urgent') || text.contains('support') || text.contains('call')) {
+      statusLabel = 'Redirecting to Emergency Support…';
+      notifyListeners();
+      tts.speak('Opening Emergency Support.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const EmergencySupportPage()));
       }
       return;
     }

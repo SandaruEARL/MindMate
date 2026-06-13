@@ -222,13 +222,13 @@ class BreathingController extends ChangeNotifier {
       intent = 'NAVIGATE_MINDFULNESS_SESSION';
     } else if (text.contains('home') || text.contains('go back') || text.contains('exit')) {
       intent = 'NAVIGATE_HOME';
-    } else if (text.contains('emergency') || text.contains('crisis')) {
+    } else if (text.contains('emergency') || text.contains('crisis') || text.contains('urgent') || text.contains('support') || text.contains('call')) {
       intent = 'NAVIGATE_EMERGENCY';
-    } else if (text.contains('sleep') || text.contains('bedtime')) {
+    } else if (text.contains('sleep') || text.contains('rest') || text.contains('bedtime') || text.contains('hygiene') || text.contains('insomnia')) {
       intent = 'NAVIGATE_SLEEP';
-    } else if (text.contains('mindful') || text.contains('meditat')) {
+    } else if (text.contains('mindful') || text.contains('meditat') || text.contains('aware') || text.contains('present')) {
       intent = 'NAVIGATE_MINDFULNESS';
-    } else if (text.contains('mood') || text.contains('feel')) {
+    } else if (text.contains('mood') || text.contains('feeling') || text.contains('emotion') || text.contains('track')) {
       intent = 'NAVIGATE_MOOD';
     } 
     // NLU: Exercise Commands
@@ -248,33 +248,33 @@ class BreathingController extends ChangeNotifier {
     switch (intent) {
       case 'NAVIGATE_HOME':
         await _stopExerciseForNavigation();
-        await speak('Going back to the home page.');
+        speak('Going back to the home page.');
         if (_context != null && _context!.mounted) Navigator.of(_context!).popUntil((r) => r.isFirst);
         return;
       case 'NAVIGATE_EMERGENCY':
         await _stopExerciseForNavigation();
         navigationTarget = EmergencySupportPage(initialCallKey: callKey);
-        await speak('Opening Emergency Support.');
+        speak('Opening Emergency Support.');
         break;
       case 'NAVIGATE_SLEEP':
         await _stopExerciseForNavigation();
         navigationTarget = const SleepVuiScreen();
-        await speak('Opening Sleep Hygiene.');
+        speak('Opening Sleep Hygiene.');
         break;
       case 'NAVIGATE_MINDFULNESS_SESSION':
         await _stopExerciseForNavigation();
         navigationTarget = MindfulnessPage(initialSessionId: mindfulnessId);
-        await speak('Starting mindfulness session.');
+        speak('Starting mindfulness session.');
         break;
       case 'NAVIGATE_MINDFULNESS':
         await _stopExerciseForNavigation();
         navigationTarget = const MindfulnessPage();
-        await speak('Opening Mindfulness.');
+        speak('Opening Mindfulness.');
         break;
       case 'NAVIGATE_MOOD':
         await _stopExerciseForNavigation();
         navigationTarget = const MoodTrackingPage();
-        await speak('Opening Mood Tracking.');
+        speak('Opening Mood Tracking.');
         break;
       case 'STOP_EXERCISE':
         if (isAnimating) {
