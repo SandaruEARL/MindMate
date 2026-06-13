@@ -226,17 +226,21 @@ class MindfulnessController extends ChangeNotifier {
 
   Future<void> speakConversationalResponse(String response) async {
     chatHistory.add(MindfulnessMessage(response, isUser: false));
+    activeTab = 'chat'; // Automatically switch to the chat tab to show the response
     statusLabel = 'Speaking answer…';
     notifyListeners();
     await tts.stop(); // Stop any overlapping/queued speech before speaking
     await tts.speak(response);
 
     // If the controller is expecting an answer, automatically turn the microphone back on!
-    if (currentState != 'idle' && _context != null && _context!.mounted) {
-      await startListening();
-    } else {
-      statusLabel = 'Press microphone to talk';
-      notifyListeners();
+    // But ONLY if the user hasn't already manually turned it on by interrupting us!
+    if (!isListening) {
+      if (currentState != 'idle' && _context != null && _context!.mounted) {
+        await startListening();
+      } else {
+        statusLabel = 'Press microphone to talk';
+        notifyListeners();
+      }
     }
   }
 
@@ -324,6 +328,83 @@ class MindfulnessController extends ChangeNotifier {
       }
       return;
     }
+    // ── Psychoeducation & info queries (Local-First to save API Quota) ──────
+    // Placed here so that users can ask questions even while the app is waiting for a yes/no!
+
+    if (text.contains('what is mindfulness') || text.contains('explain mindfulness')) {
+      await speakConversationalResponse(
+        'Mindfulness is the practice of being fully present in the current moment, without judgment. '
+        'It helps you observe your thoughts, feelings, and sensations gently, which can reduce stress and increase emotional balance. '
+        'Would you like to start a meditation session now, or ask another question?',
+      );
+      return;
+    }
+    if (text.contains('what is meditation') || text.contains('explain meditation') || text.contains('why should i meditate') || text.contains('benefits of meditation')) {
+      await speakConversationalResponse(
+        'Regular meditation helps calm your nervous system, improves your focus, reduces stress and anxiety, and builds emotional resilience. '
+        'It is a gentle way to care for your mind. '
+        'Would you like to try one of our guided meditations now, or ask something else?',
+      );
+      return;
+    }
+    if (text.contains('what is body scan') || text.contains('explain body scan') || text.contains('how does body scan help')) {
+      await speakConversationalResponse(
+        'A body scan is a mindfulness practice where you mentally scan your body from head to toe, paying attention to physical sensations. '
+        'It helps you reconnect with your body and release stored physical tension. '
+        'Would you like to start the Body Scan session now, or ask another question?',
+      );
+      return;
+    }
+    if (text.contains('what is loving kindness') || text.contains('explain loving kindness') || text.contains('compassion meditation')) {
+      await speakConversationalResponse(
+        'Loving Kindness meditation involves sending wishes of safety, happiness, and peace to yourself, your loved ones, and eventually all living beings. '
+        'It helps cultivate compassion and reduce negative emotions. '
+        'Would you like to start the Loving Kindness session now, or ask another question?',
+      );
+      return;
+    }
+    if (text.contains('what is mindful observation') || text.contains('explain mindful observation')) {
+      await speakConversationalResponse(
+        'Mindful Observation is a practice where you focus your visual attention on a single object in front of you. '
+        'It grounds you in the physical present and slows down rapid thoughts. '
+        'Would you like to start the Mindful Observation session now, or ask another question?',
+      );
+      return;
+    }
+    if (text.contains('what is anxiety') || text.contains('how to manage anxiety') || text.contains('help with anxiety')) {
+      await speakConversationalResponse(
+        'Anxiety is a natural response to stress, but it can feel overwhelming. '
+        'You can manage it by taking slow, deep breaths, grounding yourself in the present, or doing our Anxiety Reduction meditation. '
+        'Would you like me to start the Anxiety Reduction meditation for you now?',
+      );
+      return;
+    }
+    if (text.contains('what is stress') || text.contains('how to manage stress') || text.contains('help with stress')) {
+      await speakConversationalResponse(
+        'Stress is how your body responds to daily challenges and pressures. '
+        'You can manage it by setting boundaries, taking deep breaths, and using a Body Scan or breathing exercises to relax your muscles. '
+        'Would you like to try a meditation session now, or ask something else?',
+      );
+      return;
+    }
+    if (text.contains('what is depression') || text.contains('help with depression') || text.contains('explain depression')) {
+      await speakConversationalResponse(
+        'Depression is a common mental health challenge that can feel like a heavy weight, causing sadness or loss of interest. '
+        'Please know that you are not alone, and speaking to a professional or a loved one is a courageous first step. '
+        'We also have a Loving Kindness meditation for comfort, or I can guide you to our Emergency Support page. '
+        'Would you like to view our Emergency contacts, or start a meditation?',
+      );
+      return;
+    }
+    if (text.contains('what can i say') || text.contains('features') || text.contains('how does this work') || text.contains('help')) {
+      await speakConversationalResponse(
+        'You can say, "Start Body Scan", "Start Anxiety Reduction", "Start Loving Kindness", "Start Focus", "Start Gratitude", or "Start Beginner Meditation". '
+        'You can also ask questions like, "What is mindfulness?", "How do I manage anxiety?", or say "Go back". '
+        'What would you like to do now?',
+      );
+      return;
+    }
+
 
     // 2. State: awaiting_reflection_response
     if (currentState == 'awaiting_reflection_response') {
@@ -553,81 +634,6 @@ class MindfulnessController extends ChangeNotifier {
       return;
     }
 
-    // ── Psychoeducation & info queries (Local-First to save API Quota) ──────
-
-    if (text.contains('what is mindfulness') || text.contains('explain mindfulness')) {
-      await speakConversationalResponse(
-        'Mindfulness is the practice of being fully present in the current moment, without judgment. '
-        'It helps you observe your thoughts, feelings, and sensations gently, which can reduce stress and increase emotional balance. '
-        'Would you like to start a meditation session now, or ask another question?',
-      );
-      return;
-    }
-    if (text.contains('what is meditation') || text.contains('why should i meditate') || text.contains('benefits of meditation')) {
-      await speakConversationalResponse(
-        'Regular meditation helps calm your nervous system, improves your focus, reduces stress and anxiety, and builds emotional resilience. '
-        'It is a gentle way to care for your mind. '
-        'Would you like to try one of our guided meditations now, or ask something else?',
-      );
-      return;
-    }
-    if (text.contains('what is body scan') || text.contains('explain body scan') || text.contains('how does body scan help')) {
-      await speakConversationalResponse(
-        'A body scan is a mindfulness practice where you mentally scan your body from head to toe, paying attention to physical sensations. '
-        'It helps you reconnect with your body and release stored physical tension. '
-        'Would you like to start the Body Scan session now, or ask another question?',
-      );
-      return;
-    }
-    if (text.contains('what is loving kindness') || text.contains('explain loving kindness') || text.contains('compassion meditation')) {
-      await speakConversationalResponse(
-        'Loving Kindness meditation involves sending wishes of safety, happiness, and peace to yourself, your loved ones, and eventually all living beings. '
-        'It helps cultivate compassion and reduce negative emotions. '
-        'Would you like to start the Loving Kindness session now, or ask another question?',
-      );
-      return;
-    }
-    if (text.contains('what is mindful observation') || text.contains('explain mindful observation')) {
-      await speakConversationalResponse(
-        'Mindful Observation is a practice where you focus your visual attention on a single object in front of you. '
-        'It grounds you in the physical present and slows down rapid thoughts. '
-        'Would you like to start the Mindful Observation session now, or ask another question?',
-      );
-      return;
-    }
-    if (text.contains('what is anxiety') || text.contains('how to manage anxiety') || text.contains('help with anxiety')) {
-      await speakConversationalResponse(
-        'Anxiety is a natural response to stress, but it can feel overwhelming. '
-        'You can manage it by taking slow, deep breaths, grounding yourself in the present, or doing our Anxiety Reduction meditation. '
-        'Would you like me to start the Anxiety Reduction meditation for you now?',
-      );
-      return;
-    }
-    if (text.contains('what is stress') || text.contains('how to manage stress') || text.contains('help with stress')) {
-      await speakConversationalResponse(
-        'Stress is how your body responds to daily challenges and pressures. '
-        'You can manage it by setting boundaries, taking deep breaths, and using a Body Scan or breathing exercises to relax your muscles. '
-        'Would you like to try a meditation session now, or ask something else?',
-      );
-      return;
-    }
-    if (text.contains('what is depression') || text.contains('help with depression') || text.contains('explain depression')) {
-      await speakConversationalResponse(
-        'Depression is a common mental health challenge that can feel like a heavy weight, causing sadness or loss of interest. '
-        'Please know that you are not alone, and speaking to a professional or a loved one is a courageous first step. '
-        'We also have a Loving Kindness meditation for comfort, or I can guide you to our Emergency Support page. '
-        'Would you like to view our Emergency contacts, or start a meditation?',
-      );
-      return;
-    }
-    if (text.contains('what can i say') || text.contains('features') || text.contains('how does this work') || text.contains('help')) {
-      await speakConversationalResponse(
-        'You can say, "Start Body Scan", "Start Anxiety Reduction", "Start Loving Kindness", "Start Focus", "Start Gratitude", or "Start Beginner Meditation". '
-        'You can also ask questions like, "What is mindfulness?", "How do I manage anxiety?", or say "Go back". '
-        'What would you like to do now?',
-      );
-      return;
-    }
 
     // ── Tab switching ────────────────────────────────────────────────────────
     if (text.contains('open mindfulness') || text.contains('show mindfulness')) {
