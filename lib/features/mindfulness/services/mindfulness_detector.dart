@@ -18,7 +18,7 @@ class MindfulnessDetector {
     }
     
     // Beginner Meditation
-    if (t.contains('beginner') || (t.contains('start') && t.contains('meditation'))) {
+    if (t.contains('beginner')) {
       return 'beginner';
     }
     

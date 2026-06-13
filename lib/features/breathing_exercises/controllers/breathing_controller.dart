@@ -99,8 +99,8 @@ class BreathingController extends ChangeNotifier {
       CurvedAnimation(parent: circleController, curve: Curves.easeInOut),
     );
 
-    await _initTts(skipGreeting: initialExerciseId != null);
     await _initStt();
+    await _initTts(skipGreeting: initialExerciseId != null);
 
     if (initialExerciseId != null) {
       final ex = exercises.firstWhere(

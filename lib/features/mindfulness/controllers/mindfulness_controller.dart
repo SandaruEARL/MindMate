@@ -86,8 +86,8 @@ class MindfulnessController extends ChangeNotifier {
       }
     });
 
-    await _initTts(skipGreeting: initialSessionId != null);
     await _initStt();
+    await _initTts(skipGreeting: initialSessionId != null);
 
     if (initialSessionId != null) {
       final sessionName = _getSessionName(initialSessionId);
@@ -669,14 +669,19 @@ class MindfulnessController extends ChangeNotifier {
       statusLabel = 'Processing locally…';
       notifyListeners();
       
-      if (text.contains('mindfulness')) {
-        await speakConversationalResponse('Mindfulness is the practice of being fully present. Would you like to start a session?');
+      if (text.contains('mindfulness') || text.contains('meditation')) {
+        currentState = 'awaiting_session_confirmation';
+        recommendedSession = 'beginner';
+        notifyListeners();
+        await speakConversationalResponse(
+          'Mindfulness and meditation can help calm your nervous system. '
+          'We have sessions like Beginner Meditation, Focus, or Loving Kindness. '
+          'Would you like me to start the Beginner Meditation for you?',
+        );
       } else if (text.contains('anxiety')) {
         await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Anxiety Reduction meditation?');
       } else if (text.contains('stress')) {
         await speakConversationalResponse('Stress is how your body responds to pressures. You can manage it by taking deep breaths. Would you like to try a meditation?');
-      } else if (text.contains('meditation')) {
-        await speakConversationalResponse('Regular meditation helps calm your nervous system. Would you like to try a guided meditation now?');
       } else {
         chatHistory.add(const MindfulnessMessage(
           "I am sorry, I didn't catch that. Try saying 'Start Body Scan' or ask me about mindfulness.",
