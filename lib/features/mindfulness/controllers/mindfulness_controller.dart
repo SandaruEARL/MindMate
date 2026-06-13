@@ -90,9 +90,23 @@ class MindfulnessController extends ChangeNotifier {
     await _initStt();
 
     if (initialSessionId != null) {
+      final sessionName = _getSessionName(initialSessionId);
+      currentState = 'awaiting_session_confirmation';
       recommendedSession = initialSessionId;
-      await _startRecommendedSession();
+      activeTab = 'chat'; // Automatically switch to chat tab so the user sees the message!
+      notifyListeners();
+      await speakConversationalResponse(
+        'I see you might need some help right now. You can do the $sessionName program, could I start this for you or not?',
+      );
     }
+  }
+
+  String _getSessionName(String id) {
+    if (id == 'body_scan') return 'Body Scan';
+    final all = [...kMindfulnessSessions, ...kGuidedMeditationSessions];
+    final match = all.where((s) => s['id'] == id).firstOrNull;
+    if (match != null) return match['title'] as String;
+    return 'Meditation';
   }
 
   Future<void> _initTts({bool skipGreeting = false}) async {
@@ -216,6 +230,14 @@ class MindfulnessController extends ChangeNotifier {
     notifyListeners();
     await tts.stop(); // Stop any overlapping/queued speech before speaking
     await tts.speak(response);
+
+    // If the controller is expecting an answer, automatically turn the microphone back on!
+    if (currentState != 'idle' && _context != null && _context!.mounted) {
+      await startListening();
+    } else {
+      statusLabel = 'Press microphone to talk';
+      notifyListeners();
+    }
   }
 
   // ── Voice command handler ─────────────────────────────────────────────────
@@ -352,8 +374,12 @@ class MindfulnessController extends ChangeNotifier {
         currentState = 'idle';
         recommendedSession = '';
         notifyListeners();
+        final allTitles = [
+          ...kMindfulnessSessions.map((s) => s['title'] as String),
+          ...kGuidedMeditationSessions.map((s) => s['title'] as String),
+        ].join(', ');
         await speakConversationalResponse(
-          'That is completely fine. Whenever you feel ready, just tell me how you are feeling and I will suggest something for you.',
+          'That is completely fine. Available sessions are: $allTitles. Which one would you like to try?',
         );
       } else {
         await speakConversationalResponse(
