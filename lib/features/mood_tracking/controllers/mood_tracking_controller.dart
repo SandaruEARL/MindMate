@@ -10,11 +10,16 @@ import 'package:mindmate/features/sleep_hygiene/screens/sleep_vui_screen.dart';
 import 'package:mindmate/features/emergency_support/services/crisis_detector.dart';
 import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
 import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
+import 'package:mindmate/features/mood_tracking/data/mood_qa_data.dart';
 
 // ── Mood Data Models ────────────────────────────────────────────────────────
 
 class MoodData {
-  const MoodData({required this.emoji, required this.label, required this.color});
+  const MoodData({
+    required this.emoji,
+    required this.label,
+    required this.color,
+  });
   final String emoji;
   final String label;
   final Color color;
@@ -32,56 +37,14 @@ const List<MoodData> availableMoods = [
 enum SpeakerType { assistant, user }
 
 class ConversationTurn {
-  ConversationTurn({required this.speaker, required this.text, this.isPreset = false});
+  ConversationTurn({required this.speaker, required this.text});
   final SpeakerType speaker;
   final String text;
-  final bool isPreset;
 }
 
-// ── Rule-Based Data ────────────────────────────────────────────────────────
-
-const Map<String, List<String>> _presetQuestions = {
-  'Great': [
-    "Something good is happening — what's lighting you up today?",
-    "Is there a person or moment behind that feeling?",
-  ],
-  'Good': [
-    "Good is worth pausing on. What's been going right?",
-    "Anything on your mind that you'd like to just talk through?",
-  ],
-  'Okay': [
-    "Okay can mean a lot of things. What's your day actually been like?",
-    "Is there something quietly weighing on you, even a little?",
-    "How have you been sleeping lately?",
-  ],
-  'Sad': [
-    "I'm glad you're here. Can you tell me what's been going on?",
-    "How long have you been carrying this feeling?",
-    "Is there one thing that's hurting the most right now?",
-  ],
-  'Struggling': [
-    "Thank you for being honest about that. What's been the hardest part?",
-    "Has something specific happened, or has it been building for a while?",
-    "Is there anyone in your life who knows you're going through this?",
-  ],
-  'Angry': [
-    "I hear you. What specifically triggered this anger?",
-    "Is this a new feeling, or has it been building up over time?",
-  ],
-};
-
-const Map<String, String> _presetClosings = {
-  'Great': "That sounds wonderful. Hold onto this positive energy and use it to fuel the rest of your day! Keep shining, you're doing great.",
-  'Good': "It's so important to recognize these good moments. Take a deep breath and let that feeling settle in. Wishing you a peaceful rest of your day.",
-  'Okay': "It's completely fine to just be 'okay'. You don't always have to be at 100%. Take it easy today. I'm always here if you need to talk.",
-  'Sad': "Thank you for sharing that with me. Please be gentle with yourself today. Remember that it's okay to feel this way, and feelings do pass. Take a slow breath. You are not alone.",
-  'Struggling': "I hear how heavy this is for you right now. Please consider reaching out to a friend, family member, or using the emergency support if you feel overwhelmed. You don't have to carry this alone. Please take care of yourself.",
-  'Angry': "It's completely valid to feel frustrated. Taking a moment to step away or do a breathing exercise can really help your nervous system reset. Remember to breathe. You can handle this.",
-};
-
-/// MoodTrackingController manages the Voice User Interface (VUI) for Mood Tracking.
-/// It strictly follows the Rule-Based Spoken Language System Architecture:
-/// 1. User Input -> 2. NLU -> 3. Intent -> 4. Dialogue Manager -> 5. Response
+/// MoodTrackingController manages the VUI for Mood Tracking.
+/// Flow: User selects mood → user asks questions (voice) → app answers → repeat indefinitely.
+/// All Q&A is rule-based via keyword matching in mood_qa_data.dart — no external API.
 class MoodTrackingController extends ChangeNotifier {
   final FlutterTts tts = FlutterTts();
   final stt.SpeechToText sttEngine = stt.SpeechToText();
@@ -90,17 +53,13 @@ class MoodTrackingController extends ChangeNotifier {
   bool isListening = false;
   bool sttAvailable = false;
   bool isProcessing = false;
+  bool _hasFinalResult = false;
   bool isBotThinking = false;
   String recognizedText = '';
   String statusLabel = 'Tap the mic and speak';
 
   MoodData? selectedMood;
   final List<ConversationTurn> turns = [];
-
-  bool conversationEnded = false;
-  bool isPresetPhase = true;
-  int _presetIndex = 0;
-  List<String> _currentPresetQList = [];
 
   BuildContext? _context;
   void attachContext(BuildContext ctx) => _context = ctx;
@@ -132,9 +91,9 @@ class MoodTrackingController extends ChangeNotifier {
       },
       onStatus: (s) {
         debugPrint('STT status: $s');
-        if ((s == 'done' || s == 'notListening') && isListening) {
-          stopListening();
-        }
+        // FIXED: Removed the stopListening() call from onStatus callback
+        // This prevents race conditions with onResult callback.
+        // Only onResult callback will trigger stopListening() when finalResult=true.
       },
     );
     notifyListeners();
@@ -145,7 +104,7 @@ class MoodTrackingController extends ChangeNotifier {
     await tts.speak(text);
   }
 
-  // ── UI Actions ──
+  // ── Mood Selection ──
 
   Future<void> selectMood(MoodData mood) async {
     if (isBotThinking) return;
@@ -153,53 +112,39 @@ class MoodTrackingController extends ChangeNotifier {
     selectedMood = mood;
     turns.clear();
     isBotThinking = false;
-    conversationEnded = false;
-    isPresetPhase = true;
-    _presetIndex = 0;
-    _currentPresetQList = List<String>.from(
-      _presetQuestions[mood.label] ?? [
-        "Tell me what's going on for you right now.",
-        "What's been weighing on your mind lately?",
-      ],
-    );
-
     statusLabel = 'Tap the mic and speak';
     notifyListeners();
 
     await speak('You selected ${mood.label}.');
-
-    final firstQuestion = _currentPresetQList.first;
-    _addAssistantTurn(firstQuestion, isPreset: true);
-    await speak(firstQuestion);
   }
 
-  void _addAssistantTurn(String text, {bool isPreset = false}) {
-    turns.add(ConversationTurn(speaker: SpeakerType.assistant, text: text, isPreset: isPreset));
+  void _addAssistantTurn(String text) {
+    turns.add(ConversationTurn(speaker: SpeakerType.assistant, text: text));
     onScrollToBottom?.call();
     notifyListeners();
   }
 
   void _addUserTurn(String text) {
-    turns.add(ConversationTurn(speaker: SpeakerType.user, text: text, isPreset: isPresetPhase));
+    turns.add(ConversationTurn(speaker: SpeakerType.user, text: text));
     onScrollToBottom?.call();
     notifyListeners();
   }
 
-  // ── Spoken Language System Pipeline ──
+  // ── Mic Controls ──
 
-  // 1. USER INPUT (Speech-to-Text)
   Future<void> onMicTap() async {
     isListening ? await stopListening() : await startListening();
   }
 
   Future<void> startListening() async {
-    if (isBotThinking || conversationEnded) return;
+    if (isBotThinking) return;
     if (!sttAvailable) {
       await speak('Speech recognition not available.');
       return;
     }
     await tts.stop();
     isListening = true;
+    _hasFinalResult = false;
     recognizedText = '';
     statusLabel = 'Listening…';
     notifyListeners();
@@ -208,8 +153,10 @@ class MoodTrackingController extends ChangeNotifier {
       onResult: (r) {
         recognizedText = r.recognizedWords;
         notifyListeners();
-        if (r.finalResult && !isProcessing) {
-          stopListening();
+        // FIXED: Only process when we get finalResult and haven't already processed
+        if (r.finalResult && !_hasFinalResult && !isProcessing) {
+          _hasFinalResult = true;
+          stopListening(); // No need to await; stopListening has its own guard
         }
       },
       listenFor: const Duration(seconds: 30),
@@ -223,7 +170,7 @@ class MoodTrackingController extends ChangeNotifier {
     isProcessing = true;
     await sttEngine.stop();
     isListening = false;
-    
+
     final spoken = recognizedText.trim();
     recognizedText = '';
     statusLabel = spoken.isEmpty ? 'Tap the mic and speak' : 'Processing…';
@@ -240,9 +187,8 @@ class MoodTrackingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 2. NLU (Natural Language Understanding)
-  // 3. INTENT (Categorization)
-  // 4. DIALOGUE MANAGER (Routing & Rule-based conversation logic)
+  // ── Voice Command Pipeline: NLU → Intent → Dialogue Manager → Response ──
+
   Future<void> _handleVoiceCommand(String spoken) async {
     final t = spoken.toLowerCase();
     String intent = 'UNKNOWN';
@@ -252,36 +198,61 @@ class MoodTrackingController extends ChangeNotifier {
     final breathingExId = BreathingDetector.detectExerciseIntent(t);
     final mindfulnessId = MindfulnessDetector.detectSessionIntent(t);
 
-    // NLU: Navigation Keywords
+    // NLU: Navigation intents
     if (callKey != null || CrisisDetector.isCrisis(t)) {
       intent = 'NAVIGATE_EMERGENCY';
     } else if (breathingExId != null) {
       intent = 'NAVIGATE_BREATHING_EXERCISE';
     } else if (mindfulnessId != null) {
       intent = 'NAVIGATE_MINDFULNESS_SESSION';
-    } else if (t.contains('home') || t.contains('go back') || t.contains('exit')) {
+    } else if (t.contains('home') ||
+        t.contains('go back') ||
+        t.contains('exit')) {
       intent = 'NAVIGATE_HOME';
-    } else if (t.contains('emergency') || t.contains('crisis') || t.contains('suicide') || t.contains('kill myself') || t.contains('hurt myself') || t.contains('urgent') || t.contains('support') || t.contains('call')) {
+    } else if (t.contains('emergency') ||
+        t.contains('crisis') ||
+        t.contains('suicide') ||
+        t.contains('kill myself') ||
+        t.contains('hurt myself') ||
+        t.contains('urgent') ||
+        t.contains('support') ||
+        t.contains('call')) {
       intent = 'NAVIGATE_EMERGENCY';
-    } else if (t.contains('sleep') || t.contains('rest') || t.contains('bedtime') || t.contains('hygiene') || t.contains('insomnia')) {
+    } else if (t.contains('sleep') ||
+        t.contains('rest') ||
+        t.contains('bedtime') ||
+        t.contains('hygiene') ||
+        t.contains('insomnia')) {
       intent = 'NAVIGATE_SLEEP';
-    } else if (t.contains('mindful') || t.contains('meditat') || t.contains('aware') || t.contains('present')) {
+    } else if (t.contains('mindful') ||
+        t.contains('meditat') ||
+        t.contains('aware') ||
+        t.contains('present')) {
       intent = 'NAVIGATE_MINDFULNESS';
-    } else if (t.contains('breath') || t.contains('relax') || t.contains('cant breathe') || t.contains('panic') || t.contains('calm') || t.contains('exercise')) {
+    } else if (t.contains('breath') ||
+        t.contains('relax') ||
+        t.contains('cant breathe') ||
+        t.contains('panic') ||
+        t.contains('calm') ||
+        t.contains('exercise')) {
       intent = 'NAVIGATE_BREATHING';
     }
 
-    // Dialogue Manager: Act on Navigation Intents
+    // Dialogue Manager: handle navigation
     if (intent != 'UNKNOWN') {
       await tts.stop();
       switch (intent) {
         case 'NAVIGATE_HOME':
           speak('Going back to the home page.');
-          if (_context != null && _context!.mounted) Navigator.of(_context!).popUntil((r) => r.isFirst);
+          if (_context != null && _context!.mounted) {
+            Navigator.of(_context!).popUntil((r) => r.isFirst);
+          }
           return;
         case 'NAVIGATE_EMERGENCY':
           targetPage = EmergencySupportPage(initialCallKey: callKey);
-          _addAssistantTurn('I can hear that you are really struggling. Taking you to Emergency Support now.', isPreset: false);
+          _addAssistantTurn(
+            'I can hear that you are really struggling. Taking you to Emergency Support now.',
+          );
           speak('Taking you to Emergency Support now.');
           break;
         case 'NAVIGATE_SLEEP':
@@ -290,7 +261,7 @@ class MoodTrackingController extends ChangeNotifier {
           break;
         case 'NAVIGATE_MINDFULNESS_SESSION':
           targetPage = MindfulnessPage(initialSessionId: mindfulnessId);
-          _addAssistantTurn('Starting mindfulness session.', isPreset: false);
+          _addAssistantTurn('Starting mindfulness session.');
           speak('Starting mindfulness session.');
           break;
         case 'NAVIGATE_MINDFULNESS':
@@ -299,7 +270,7 @@ class MoodTrackingController extends ChangeNotifier {
           break;
         case 'NAVIGATE_BREATHING_EXERCISE':
           targetPage = BreathingExercisesPage(initialExerciseId: breathingExId);
-          _addAssistantTurn('Starting breathing exercise.', isPreset: false);
+          _addAssistantTurn('Starting breathing exercise.');
           speak('Starting breathing exercise.');
           break;
         case 'NAVIGATE_BREATHING':
@@ -308,12 +279,14 @@ class MoodTrackingController extends ChangeNotifier {
           break;
       }
       if (_context != null && _context!.mounted && targetPage != null) {
-        Navigator.of(_context!).pushReplacement(MaterialPageRoute(builder: (_) => targetPage!));
+        Navigator.of(
+          _context!,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => targetPage!));
       }
       return;
     }
 
-    // Dialogue Manager: Mood Selection Check
+    // Dialogue Manager: mood selection by voice (if not yet selected)
     if (selectedMood == null) {
       MoodData? matched;
       for (final m in availableMoods) {
@@ -325,39 +298,38 @@ class MoodTrackingController extends ChangeNotifier {
       if (matched != null) {
         await selectMood(matched);
       } else {
-        await speak('I heard "$spoken" but please tap or say your mood: Great, Good, Okay, Sad, Struggling, or Angry.');
+        await speak(
+          'I heard "$spoken" but please tap or say your mood: Great, Good, Okay, Sad, Struggling, or Angry.',
+        );
         statusLabel = 'Tap the mic and speak';
         notifyListeners();
       }
       return;
     }
 
-    // Dialogue Manager: Continue preset conversation
+    // ── Main Q&A Flow ──────────────────────────────────────────────────────
+    // User asks a question → keyword match in mood_qa_data → speak answer → loop (never ends)
+
     _addUserTurn(spoken);
     isBotThinking = true;
     statusLabel = 'Processing…';
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 600));
+    await Future.delayed(const Duration(milliseconds: 400));
 
-    String reply = '';
-    if (isPresetPhase) {
-      _presetIndex++;
-      if (_presetIndex < _currentPresetQList.length) {
-        reply = _currentPresetQList[_presetIndex];
-      } else {
-        isPresetPhase = false;
-        conversationEnded = true;
-        reply = _presetClosings[selectedMood!.label] ?? "Thank you for sharing. Please take care of yourself today. I am always here for you.";
-      }
-    } else if (conversationEnded) {
-      reply = "I'm always here. Take care of yourself.";
+    final matchedQA = findMatchingQA(selectedMood!.label, spoken);
+
+    String reply;
+    if (matchedQA != null) {
+      reply = matchedQA.answer;
+    } else {
+      reply =
+          'I did not understand that. Please try asking one of the questions shown above.';
     }
 
-    // 5. RESPONSE
     isBotThinking = false;
-    statusLabel = conversationEnded ? 'Session complete' : 'Tap the mic and speak';
-    _addAssistantTurn(reply, isPreset: isPresetPhase);
+    statusLabel = 'Tap the mic and speak';
+    _addAssistantTurn(reply);
     await speak(reply);
   }
 

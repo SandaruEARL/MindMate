@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mindmate/core/widgets/voice_mic_button.dart';
 import '../controllers/mood_tracking_controller.dart';
+import '../data/mood_qa_data.dart';
 
 class MoodTrackingPage extends StatefulWidget {
   const MoodTrackingPage({super.key});
@@ -51,7 +52,8 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final accentColor = _controller.selectedMood?.color ?? const Color(0xFF6C63FF);
+        final accentColor =
+            _controller.selectedMood?.color ?? const Color(0xFF6C63FF);
 
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -100,17 +102,20 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
                   ),
                 ),
 
-                // ── PHASE LABEL ──────────────────────────────────────────────
+                // ── Question hint chips (shown after mood selected) ──────────
                 if (_controller.selectedMood != null)
-                  _PhaseLabel(
-                    isPreset: _controller.isPresetPhase,
-                    isEnded: _controller.conversationEnded,
+                  _QuestionHints(
+                    moodLabel: _controller.selectedMood!.label,
                     accentColor: accentColor,
                   ),
 
+                const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Divider(height: 1, color: Colors.black.withOpacity(0.05)),
+                  child: Divider(
+                    height: 1,
+                    color: Colors.black.withOpacity(0.05),
+                  ),
                 ),
 
                 // ── MIDDLE: Conversational area ──────────────────────────────
@@ -120,7 +125,6 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
                     isBotThinking: _controller.isBotThinking,
                     selectedMood: _controller.selectedMood,
                     scrollController: _scrollController,
-                    isEnded: _controller.conversationEnded,
                     accentColor: accentColor,
                   ),
                 ),
@@ -128,14 +132,12 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
                 // ── BOTTOM: Mic Button ────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                  child: _controller.conversationEnded
-                      ? _EndedMessage(color: accentColor)
-                      : VoiceMicButton(
-                          isListening: _controller.isListening,
-                          onTap: _controller.onMicTap,
-                          statusLabel: _controller.statusLabel,
-                          recognizedText: _controller.recognizedText,
-                        ),
+                  child: VoiceMicButton(
+                    isListening: _controller.isListening,
+                    onTap: _controller.onMicTap,
+                    statusLabel: _controller.statusLabel,
+                    recognizedText: _controller.recognizedText,
+                  ),
                 ),
               ],
             ),
@@ -146,7 +148,53 @@ class _MoodTrackingPageState extends State<MoodTrackingPage> {
   }
 }
 
-// ── Additional Widgets ────────────────────────────────────────────────────────
+// ── Question Hint Chips ───────────────────────────────────────────────────────
+/// Shows the 5 available questions for the selected mood as small scrollable chips.
+class _QuestionHints extends StatelessWidget {
+  const _QuestionHints({required this.moodLabel, required this.accentColor});
+
+  final String moodLabel;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final questions = moodQAMap[moodLabel] ?? [];
+    if (questions.isEmpty) return const SizedBox(height: 8);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 2),
+      child: SizedBox(
+        height: 34,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          itemCount: questions.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, i) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: accentColor.withOpacity(0.3)),
+              ),
+              child: Text(
+                questions[i].question,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: accentColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ── Mood Selector Grid ────────────────────────────────────────────────────────
 
 class _MoodSelectorGrid extends StatelessWidget {
   const _MoodSelectorGrid({
@@ -239,30 +287,49 @@ class _MoodCard3DState extends State<_MoodCard3D> {
   Widget build(BuildContext context) {
     final color = widget.mood.color;
     final hsl = HSLColor.fromColor(color);
-    final shadowColor = hsl.withLightness((hsl.lightness - 0.18).clamp(0.0, 1.0)).toColor();
-
+    final shadowColor = hsl
+        .withLightness((hsl.lightness - 0.18).clamp(0.0, 1.0))
+        .toColor();
     final effectivelyPressed = _isPressed || widget.isSelected;
 
     return GestureDetector(
-      onTapDown: widget.disabled ? null : (_) => setState(() => _isPressed = true),
-      onTapUp: widget.disabled ? null : (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
+      onTapDown: widget.disabled
+          ? null
+          : (_) => setState(() => _isPressed = true),
+      onTapUp: widget.disabled
+          ? null
+          : (_) {
+              setState(() => _isPressed = false);
+              widget.onTap();
+            },
       onTapCancel: () => setState(() => _isPressed = false),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 6.0),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 70),
-          transform: Matrix4.translationValues(0, effectivelyPressed ? 6.0 : 0.0, 0),
+          transform: Matrix4.translationValues(
+            0,
+            effectivelyPressed ? 6.0 : 0.0,
+            0,
+          ),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             color: widget.isSelected ? color : Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: effectivelyPressed
                 ? []
-                : [BoxShadow(color: widget.isSelected ? Colors.transparent : shadowColor, offset: const Offset(0, 6), blurRadius: 0)],
-            border: widget.isSelected ? null : Border.all(color: color.withOpacity(0.3)),
+                : [
+                    BoxShadow(
+                      color: widget.isSelected
+                          ? Colors.transparent
+                          : shadowColor,
+                      offset: const Offset(0, 6),
+                      blurRadius: 0,
+                    ),
+                  ],
+            border: widget.isSelected
+                ? null
+                : Border.all(color: color.withOpacity(0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -290,46 +357,7 @@ class _MoodCard3DState extends State<_MoodCard3D> {
   }
 }
 
-class _PhaseLabel extends StatelessWidget {
-  const _PhaseLabel({
-    required this.isPreset,
-    required this.isEnded,
-    required this.accentColor,
-  });
-
-  final bool isPreset;
-  final bool isEnded;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isEnded) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-        child: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, size: 14, color: accentColor),
-            const SizedBox(width: 6),
-            Text('Session complete', style: TextStyle(fontSize: 12, color: accentColor, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      );
-    }
-    if (!isPreset) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-        child: Row(
-          children: [
-            Icon(Icons.auto_awesome_rounded, size: 14, color: accentColor),
-            const SizedBox(width: 6),
-            Text('MindMate is here for you', style: TextStyle(fontSize: 12, color: accentColor, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      );
-    }
-    return const SizedBox(height: 4);
-  }
-}
+// ── Conversation Area ─────────────────────────────────────────────────────────
 
 class _ConversationArea extends StatelessWidget {
   const _ConversationArea({
@@ -337,7 +365,6 @@ class _ConversationArea extends StatelessWidget {
     required this.isBotThinking,
     required this.selectedMood,
     required this.scrollController,
-    required this.isEnded,
     required this.accentColor,
   });
 
@@ -345,7 +372,6 @@ class _ConversationArea extends StatelessWidget {
   final bool isBotThinking;
   final MoodData? selectedMood;
   final ScrollController scrollController;
-  final bool isEnded;
   final Color accentColor;
 
   @override
@@ -357,17 +383,28 @@ class _ConversationArea extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.waving_hand_rounded, size: 48, color: const Color(0xFF3F51B5).withOpacity(0.3)),
+              Icon(
+                Icons.waving_hand_rounded,
+                size: 48,
+                color: const Color(0xFF3F51B5).withOpacity(0.3),
+              ),
               const SizedBox(height: 16),
               Text(
                 'How are you feeling today?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF3F51B5).withOpacity(0.7)),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF3F51B5).withOpacity(0.7),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Select a mood above or use your voice.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: const Color(0xFF3F51B5).withOpacity(0.5)),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: const Color(0xFF3F51B5).withOpacity(0.5),
+                ),
               ),
             ],
           ),
@@ -391,7 +428,13 @@ class _ConversationArea extends StatelessWidget {
                   child: Icon(Icons.more_horiz, color: accentColor, size: 18),
                 ),
                 const SizedBox(width: 12),
-                Text('Thinking…', style: TextStyle(color: accentColor, fontStyle: FontStyle.italic)),
+                Text(
+                  'Thinking…',
+                  style: TextStyle(
+                    color: accentColor,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ],
             ),
           );
@@ -403,7 +446,9 @@ class _ConversationArea extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
           child: Row(
-            mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: isUser
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!isUser) ...[
@@ -416,7 +461,10 @@ class _ConversationArea extends StatelessWidget {
               ],
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: isUser ? accentColor : accentColor.withOpacity(0.08),
                     borderRadius: BorderRadius.only(
@@ -428,7 +476,13 @@ class _ConversationArea extends StatelessWidget {
                   ),
                   child: Text(
                     turn.text,
-                    style: TextStyle(color: isUser ? Colors.white : Theme.of(context).colorScheme.onSurface, fontSize: 15, height: 1.4),
+                    style: TextStyle(
+                      color: isUser
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ),
@@ -437,47 +491,17 @@ class _ConversationArea extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                   radius: 16,
-                  child: Icon(Icons.person, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
+                  child: Icon(
+                    Icons.person,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    size: 18,
+                  ),
                 ),
               ],
             ],
           ),
         );
       },
-    );
-  }
-}
-
-class _EndedMessage extends StatelessWidget {
-  const _EndedMessage({required this.color});
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.check_circle_outline_rounded, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            'Session Finished',
-            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'You can go back home or open another module.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: color.withOpacity(0.8), fontSize: 13),
-          ),
-        ],
-      ),
     );
   }
 }
