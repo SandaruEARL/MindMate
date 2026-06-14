@@ -866,10 +866,10 @@ class MindfulnessController extends ChangeNotifier {
       }
     }
 
-    // Calm, slow speech settings for meditation guidance
-    await tts.setSpeechRate(0.20);
-    await tts.setPitch(0.85);
-    await tts.setVolume(0.65);
+    // Normal speech settings for meditation guidance (matching mood tracking voice style)
+    await tts.setSpeechRate(0.45);
+    await tts.setPitch(1.0);
+    await tts.setVolume(1.0);
 
     for (final cue in cues) {
       final offset = cue['offset'] as Duration;
@@ -915,10 +915,10 @@ class MindfulnessController extends ChangeNotifier {
 
     await audioPlayer.resume();
 
-    // Meditation TTS settings
-    await tts.setSpeechRate(0.20);
-    await tts.setPitch(0.85);
-    await tts.setVolume(0.65);
+    // Meditation TTS settings (matching mood tracking voice style)
+    await tts.setSpeechRate(0.45);
+    await tts.setPitch(1.0);
+    await tts.setVolume(1.0);
 
     // Restart progress from where we left off
     final remainingDuration = _sessionDuration - _pausedElapsed;
