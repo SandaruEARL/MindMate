@@ -2,10 +2,15 @@ class MindfulnessDetector {
   /// Scans the given text for keywords related to a specific mindfulness session.
   /// Returns the session ID if a match is found, otherwise null.
   /// 
-  /// Note: "Body Scan" is specifically excluded here because it is handled by 
-  /// BreathingDetector and routed to the Breathing Exercises page globally.
+  /// Note: "Body Scan" is handled by BreathingDetector and routed to the 
+  /// Breathing Exercises page globally. This module uses "Progressive Relaxation" instead.
   static String? detectSessionIntent(String text) {
     final t = text.toLowerCase();
+    
+    // Progressive Relaxation
+    if (t.contains('progressive') || t.contains('relaxation') || t.contains('progressive relaxation')) {
+      return 'progressive_relaxation';
+    }
     
     // Mindful Observation
     if (t.contains('observation') || t.contains('mindful observation') || t.contains('observe')) {
