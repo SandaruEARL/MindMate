@@ -43,7 +43,7 @@ const List<TeamMember> teamMembers = [
   TeamMember(
     id: 'CT/2020/075',
     name: 'Rathnayaka H.M.T.C.B',
-    role: 'Architect, Developer',
+    role: 'System Architect, Developer',
     feature: 'Professional help & emergency contacts',
     color: Color(0xFF3F51B5),
   ),

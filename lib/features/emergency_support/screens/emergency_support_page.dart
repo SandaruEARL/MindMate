@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mindmate/core/widgets/voice_mic_button.dart';
+import 'package:mindmate/features/emergency_support/widget/call_voice_mick_button.dart';
 import '../models/emergency_contact.dart';
 import '../controllers/emergency_support_controller.dart';
 
@@ -249,50 +249,6 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: FilledButton.icon(
-                                  onPressed: () =>
-                                      _controller.handleConfirmation('confirm'),
-                                  icon: const Icon(Icons.call_rounded),
-                                  label: const Text('Confirm'),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor:
-                                        _controller.pendingCall!.color,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    textStyle: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () =>
-                                      _controller.handleConfirmation('cancel'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    side: BorderSide(
-                                      color: _controller.pendingCall!.color
-                                          .withOpacity(0.4),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Cancel',
-                                    style: TextStyle(fontSize: 15),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
@@ -302,8 +258,8 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 32,
-                child: VoiceMicButton(
+                bottom: 24,
+                child: CallVoiceMickButton(
                   isListening: _controller.isListening,
                   onTap: _controller.onMicTap,
                   statusLabel: _controller.statusLabel,
@@ -354,7 +310,7 @@ class _Banner extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             pendingCall != null
-                ? 'Say "confirm" to call, or "cancel" to go back.'
+                ? 'Tap the mic, then say "confirm" or "cancel".'
                 : 'Help is always available. Tap a contact or use your voice.',
             style: const TextStyle(
               color: Colors.white,
