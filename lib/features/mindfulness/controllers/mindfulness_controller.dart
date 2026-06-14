@@ -30,6 +30,15 @@ class MindfulnessController extends ChangeNotifier {
 
   late final AnimationController progressController;
   final List<Timer> _guidanceTimers = [];
+  final List<Timer> _resumeTimers = [];
+
+  // ── Pause / Resume state ──────────────────────────────────────────────────
+  bool isPaused = false;
+  Duration _pausedElapsed = Duration.zero;
+  Duration _sessionDuration = const Duration(minutes: 5);
+  List<Map<String, dynamic>> _sessionCues = [];
+  bool _sessionPlayMusic = false;
+  String _sessionTitle = '';
 
   // ── Exposed state ────────────────────────────────────────────────────────
   bool isPlaying = false;
@@ -161,7 +170,15 @@ class MindfulnessController extends ChangeNotifier {
 
   Future<void> onMicTap() async {
     if (isPlaying) {
-      await stopSession();
+      // Pause the session and listen for a voice command
+      await pauseSession();
+      await Future.delayed(const Duration(milliseconds: 400));
+      await startListening();
+      return;
+    }
+    if (isPaused) {
+      // Already paused – user taps mic again to speak
+      await startListening();
       return;
     }
     isListening ? await stopListening() : await startListening();
@@ -254,6 +271,29 @@ class MindfulnessController extends ChangeNotifier {
       statusLabel = "I didn't catch that. Try again.";
       notifyListeners();
       await tts.speak("I didn't catch that. Please try again.");
+      return;
+    }
+
+    // 0. In-session voice commands (highest priority when paused mid-session)
+    if (isPaused) {
+      if (text.contains('stop') || text.contains('close') || text.contains('end') || text.contains('exit') || text.contains('quit')) {
+        await stopSessionAndGoBack();
+        return;
+      }
+      if (text.contains('continue') || text.contains('resume') || text.contains('carry on') || text.contains('go on') || text.contains('keep going') || text.contains('start again') || text.contains('play')) {
+        statusLabel = 'Resuming session…';
+        notifyListeners();
+        await tts.speak('Resuming your session now.');
+        await resumeSession();
+        return;
+      }
+      if (text.contains('pause')) {
+        // Already paused – just confirm
+        await tts.speak('Session is already paused. Say continue to resume or stop to end.');
+        return;
+      }
+      // Unrecognised command while paused – prompt user
+      await tts.speak('Session is paused. Say continue to resume, or stop to close the meditation.');
       return;
     }
 
@@ -792,6 +832,15 @@ class MindfulnessController extends ChangeNotifier {
   }) async {
     if (isPlaying) return;
     _clearGuidanceTimers();
+    _clearResumeTimers();
+
+    // Save for potential pause/resume
+    _sessionTitle = title;
+    _sessionDuration = duration;
+    _sessionCues = cues;
+    _sessionPlayMusic = playMusic;
+    _pausedElapsed = Duration.zero;
+    isPaused = false;
 
     isPlaying = true;
     sessionLabel = '$title in progress…';
@@ -831,22 +880,92 @@ class MindfulnessController extends ChangeNotifier {
     }
   }
 
+  // ── Pause ─────────────────────────────────────────────────────────────────
+
+  Future<void> pauseSession() async {
+    if (!isPlaying) return;
+    _clearGuidanceTimers();
+    _clearResumeTimers();
+    await tts.stop();
+    await audioPlayer.pause();
+    progressController.stop();
+    _pausedElapsed = _sessionDuration * progressController.value;
+    isPlaying = false;
+    isPaused = true;
+    sessionLabel = 'Session paused. Say "continue" to resume or "stop" to end.';
+    statusLabel = 'Listening…';
+    notifyListeners();
+  }
+
+  // ── Resume ────────────────────────────────────────────────────────────────
+
+  Future<void> resumeSession() async {
+    if (!isPaused) return;
+    isPaused = false;
+    isPlaying = true;
+    sessionLabel = '$_sessionTitle in progress…';
+    activeTab = 'chat';
+    notifyListeners();
+
+    await audioPlayer.resume();
+
+    // Meditation TTS settings
+    await tts.setSpeechRate(0.20);
+    await tts.setPitch(0.85);
+    await tts.setVolume(0.65);
+
+    // Restart progress from where we left off
+    final remainingDuration = _sessionDuration - _pausedElapsed;
+    progressController.duration = remainingDuration;
+    progressController.forward();
+
+    // Re-schedule only the cues that haven't fired yet
+    for (final cue in _sessionCues) {
+      final cueOffset = cue['offset'] as Duration;
+      if (cueOffset <= _pausedElapsed) continue; // already played
+      final delay = cueOffset - _pausedElapsed;
+      final t = Timer(delay, () async {
+        if (isPlaying) await tts.speak(cue['text'] as String);
+      });
+      _resumeTimers.add(t);
+    }
+  }
+
+  // ── Stop (full) ───────────────────────────────────────────────────────────
+
   Future<void> stopSession() async {
     _clearGuidanceTimers();
+    _clearResumeTimers();
     await tts.stop();
     await _restoreNormalTtsSettings();
     await audioPlayer.stop();
     progressController.stop();
     progressController.reset();
     isPlaying = false;
+    isPaused = false;
+    _pausedElapsed = Duration.zero;
     sessionLabel = 'Session stopped.';
     currentState = 'idle';
     notifyListeners();
   }
 
+  /// Stop the session and return to the main Mindfulness & Meditation page view.
+  /// Stays on this page — does NOT navigate away.
+  Future<void> stopSessionAndGoBack() async {
+    await tts.stop();
+    await stopSession();
+    // Reset to the main page view (chat tab with Mindfulness / Guided buttons)
+    activeTab = 'chat';
+    sessionLabel = 'Tap a session to begin';
+    notifyListeners();
+    await tts.speak('Meditation closed. You can choose another session whenever you are ready.');
+  }
+
   Future<void> _onSessionComplete() async {
     _clearGuidanceTimers();
+    _clearResumeTimers();
     isPlaying = false;
+    isPaused = false;
     sessionLabel = 'Session complete. How do you feel now?';
     chatHistory.add(MindfulnessMessage('Session complete. Well done.', isUser: false));
     notifyListeners();
@@ -865,11 +984,19 @@ class MindfulnessController extends ChangeNotifier {
     _guidanceTimers.clear();
   }
 
+  void _clearResumeTimers() {
+    for (final t in _resumeTimers) {
+      t.cancel();
+    }
+    _resumeTimers.clear();
+  }
+
   // ── Dispose ───────────────────────────────────────────────────────────────
 
   @override
   void dispose() {
     _clearGuidanceTimers();
+    _clearResumeTimers();
     tts.stop();
     sttEngine.stop();
     audioPlayer.stop();
@@ -878,6 +1005,7 @@ class MindfulnessController extends ChangeNotifier {
     super.dispose();
   }
 }
+
 
 // ── Simple message model ──────────────────────────────────────────────────────
 

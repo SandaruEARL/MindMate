@@ -19,8 +19,8 @@ class MindfulnessPage extends StatefulWidget {
 class _MindfulnessPageState extends State<MindfulnessPage>
     with TickerProviderStateMixin {
   late final MindfulnessController _ctrl;
-  bool _micVisible = true;
   bool _wasPlaying = false;
+  bool _micVisible = true; // Hidden during session, revealed on screen tap
 
   @override
   void initState() {
@@ -29,8 +29,14 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     _ctrl.addListener(() {
       if (mounted) {
         if (_ctrl.isPlaying && !_wasPlaying) {
+          // Session just started — hide mic
           _micVisible = false;
         } else if (!_ctrl.isPlaying && _wasPlaying) {
+          // Session just stopped — show mic again
+          _micVisible = true;
+        }
+        // When paused, automatically reveal mic so user knows to tap
+        if (_ctrl.isPaused) {
           _micVisible = true;
         }
         _wasPlaying = _ctrl.isPlaying;
@@ -51,6 +57,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     _ctrl.dispose();
     super.dispose();
   }
+  
 
   // ── Tab-toggle pill button ─────────────────────────────────────────────────
 
@@ -140,8 +147,9 @@ class _MindfulnessPageState extends State<MindfulnessPage>
               child: GestureDetector(
                 onTap: () {
                   if (_ctrl.isPlaying) {
-                    setState(() => _micVisible = !_micVisible);
-                  } else if (_ctrl.activeTab != 'chat') {
+                    // Reveal the mic button so user can tap it
+                    setState(() => _micVisible = true);
+                  } else if (!_ctrl.isPaused && _ctrl.activeTab != 'chat') {
                     _ctrl.setActiveTab('chat');
                   }
                 },
@@ -181,8 +189,8 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                               ),
                               const SizedBox(height: 16),
 
-                              // Tab toggles (only when not playing)
-                              if (!_ctrl.isPlaying)
+                              // Tab toggles (only when not playing/paused)
+                              if (!_ctrl.isPlaying && !_ctrl.isPaused)
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -203,7 +211,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                     ),
                                   ],
                                 )
-                              else ...[
+                              else if (_ctrl.isPlaying || _ctrl.isPaused) ...[
                                 // Active session info card
                                 Builder(builder: (_) {
                                   final data = _currentSessionData();
@@ -211,6 +219,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                   return ActiveSessionCard(
                                     session: data,
                                     progressController: _ctrl.progressController,
+                                    isPaused: _ctrl.isPaused,
                                   );
                                 }),
                               ],
@@ -220,8 +229,8 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                       ),
                       const SizedBox(height: 24),
 
-                      // ── Chat log (default view + while playing) ──────────
-                      if (_ctrl.activeTab == 'chat' || _ctrl.isPlaying)
+                      // ── Chat log (default view + while playing/paused) ──────────
+                      if (_ctrl.activeTab == 'chat' || _ctrl.isPlaying || _ctrl.isPaused)
                         MindfulnessChatLog(chatHistory: _ctrl.chatHistory)
                             .animate().fade(duration: 300.ms).slideY(begin: 0.05),
 
@@ -302,15 +311,15 @@ class _MindfulnessPageState extends State<MindfulnessPage>
             ),
           ),
 
-          // ── Floating mic button (pinned at bottom) ───────────────────────
+          // ── Floating mic button (hidden during session, tap screen to reveal) ──
           Align(
             alignment: Alignment.bottomCenter,
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
                 child: AnimatedSlide(
-                  offset: _micVisible ? Offset.zero : const Offset(0, 1.5),
-                  duration: const Duration(milliseconds: 300),
+                  offset: _micVisible ? Offset.zero : const Offset(0, 2.0),
+                  duration: const Duration(milliseconds: 350),
                   curve: Curves.easeOutCubic,
                   child: AnimatedOpacity(
                     opacity: _micVisible ? 1.0 : 0.0,
@@ -318,7 +327,11 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                     child: VoiceMicButton(
                       isListening: _ctrl.isListening,
                       onTap: _ctrl.onMicTap,
-                      statusLabel: _ctrl.statusLabel,
+                      statusLabel: _ctrl.isPlaying
+                          ? 'Tap mic to pause'
+                          : _ctrl.isPaused
+                              ? 'Say "continue" or "stop"'
+                              : _ctrl.statusLabel,
                       recognizedText: _ctrl.recognizedText,
                     ),
                   ),
