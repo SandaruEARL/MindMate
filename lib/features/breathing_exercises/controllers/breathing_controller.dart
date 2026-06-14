@@ -1,9 +1,12 @@
+// controllers/breathing_controller.dart
+// Integrates BreathingFaqDetector into the VUI pipeline alongside the
+// existing exercise-selection and navigation logic.
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-import 'package:mindmate/core/constants/breathing_content.dart';
 import 'package:mindmate/features/emergency_support/screens/emergency_support_page.dart';
 import 'package:mindmate/features/mindfulness/screens/mindfulness_page.dart';
 import 'package:mindmate/features/mood_tracking/screens/mood_tracking_page.dart';
@@ -12,9 +15,12 @@ import 'package:mindmate/features/emergency_support/services/crisis_detector.dar
 import 'package:mindmate/features/breathing_exercises/services/breathing_detector.dart';
 import 'package:mindmate/features/mindfulness/services/mindfulness_detector.dart';
 
+// ── NEW IMPORTS ───────────────────────────────────────────────────────────────
+import 'package:mindmate/features/breathing_exercises/services/breathing_faq_detector.dart';
+import 'package:mindmate/features/breathing_exercises/services/breathing_faq_corpus.dart';
+// ─────────────────────────────────────────────────────────────────────────────
+
 /// BreathingController manages the Voice User Interface (VUI) for Breathing Exercises.
-/// It strictly follows the Rule-Based Spoken Language System Architecture:
-/// 1. User Input -> 2. NLU -> 3. Intent -> 4. Dialogue Manager -> 5. Response
 class BreathingController extends ChangeNotifier {
   BreathingController({required this.vsync});
 
@@ -26,7 +32,7 @@ class BreathingController extends ChangeNotifier {
   late final AnimationController circleController;
   late final Animation<double> circleAnim;
 
-  // ── Exposed State ──
+  // ── Exposed State ──────────────────────────────────────────────────────────
   bool isListening = false;
   bool sttAvailable = false;
   bool isProcessing = false;
@@ -38,12 +44,15 @@ class BreathingController extends ChangeNotifier {
 
   bool get isAnimating => activeId != null;
 
+  // ── pending exercise from FAQ suggestion ────────────────────────────────────
+  String? _pendingExerciseId;
+
   BuildContext? _context;
   void attachContext(BuildContext ctx) => _context = ctx;
 
   final List<Map<String, dynamic>> exercises = [
     {
-      'id': BreathingCorpus.idBox,
+      'id': BreathingFaqCorpus.idBox,
       'title': 'Box Breathing',
       'subtitle': 'Inhale 4s · Hold 4s · Exhale 4s · Hold 4s',
       'inhale': 4,
@@ -54,7 +63,7 @@ class BreathingController extends ChangeNotifier {
       'voice': 'Box breathing. Inhale, hold, exhale, hold.',
     },
     {
-      'id': BreathingCorpus.id478,
+      'id': BreathingFaqCorpus.id478,
       'title': '4-7-8 Breathing',
       'subtitle': 'Inhale 4s · Hold 7s · Exhale 8s',
       'inhale': 4,
@@ -65,7 +74,7 @@ class BreathingController extends ChangeNotifier {
       'voice': '4 7 8 breathing. Relax and focus on your breath.',
     },
     {
-      'id': BreathingCorpus.idDeep,
+      'id': BreathingFaqCorpus.idDeep,
       'title': 'Deep Belly Breathing',
       'subtitle': 'Slow inhale and long exhale',
       'inhale': 4,
@@ -76,7 +85,7 @@ class BreathingController extends ChangeNotifier {
       'voice': 'Deep breathing. Relax your body.',
     },
     {
-      'id': BreathingCorpus.idBodyScan,
+      'id': BreathingFaqCorpus.idBodyScan,
       'title': 'Body Scan Relaxation',
       'subtitle': 'Mindful breathing with awareness',
       'inhale': 5,
@@ -88,13 +97,14 @@ class BreathingController extends ChangeNotifier {
     },
   ];
 
-  // ── Initialization ──
+  // ── Initialization ─────────────────────────────────────────────────────────
 
   Future<void> init({String? initialExerciseId}) async {
     circleController = AnimationController(
       vsync: vsync,
       duration: const Duration(seconds: 4),
     );
+    // FIXED: Corrected spelling from 'CurangedAnimation' to 'CurvedAnimation'
     circleAnim = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(parent: circleController, curve: Curves.easeInOut),
     );
@@ -122,7 +132,11 @@ class BreathingController extends ChangeNotifier {
 
     if (!skipGreeting) {
       await Future.delayed(const Duration(milliseconds: 500));
-      await speak('You are in Breathing Exercises. Which exercise would you like to start?');
+      await speak(
+        'You are in Breathing Exercises. '
+        'Which exercise would you like to start? '
+        'You can also ask me a question or tell me how you are feeling.',
+      );
     }
   }
 
@@ -149,9 +163,8 @@ class BreathingController extends ChangeNotifier {
     await tts.speak(text);
   }
 
-  // ── Spoken Language System Pipeline ──
+  // ── Spoken Language System Pipeline ───────────────────────────────────────
 
-  // 1. USER INPUT (Speech-to-Text)
   Future<void> onMicTap() async {
     isListening ? await stopListening() : await startListening();
   }
@@ -167,6 +180,7 @@ class BreathingController extends ChangeNotifier {
     statusLabel = 'Listening…';
     notifyListeners();
 
+    // FIXED: Wrapped deprecated arguments inside modern SpeechListenOptions object
     await sttEngine.listen(
       onResult: (r) {
         recognizedText = r.recognizedWords;
@@ -175,9 +189,11 @@ class BreathingController extends ChangeNotifier {
           stopListening();
         }
       },
-      listenFor: const Duration(seconds: 20),
-      pauseFor: const Duration(seconds: 4),
-      localeId: 'en_US',
+      listenOptions: stt.SpeechListenOptions(
+        listenFor: const Duration(seconds: 20),
+        pauseFor: const Duration(seconds: 4),
+        localeId: 'en_US',
+      ),
     );
   }
 
@@ -197,9 +213,7 @@ class BreathingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 2. NLU (Natural Language Understanding)
-  // 3. INTENT (Categorization)
-  // 4. DIALOGUE MANAGER (Routing logic)
+  // ── NLU & DIALOGUE MANAGER ────────────────────────────────────────────────
   Future<void> _handleVoiceCommand(String text) async {
     if (text.isEmpty) {
       statusLabel = "Didn't catch that. Try again.";
@@ -208,109 +222,218 @@ class BreathingController extends ChangeNotifier {
       return;
     }
 
-    String intent = 'UNKNOWN';
-    Widget? navigationTarget;
-    Map<String, dynamic>? exerciseToStart;
-
+    // Layer 1: Crisis / Emergency
     final callKey = CrisisDetector.detectCallIntent(text);
+    final isCrisis = CrisisDetector.isCrisis(text);
     final mindfulnessId = MindfulnessDetector.detectSessionIntent(text);
 
-    // NLU: Navigation Keywords
-    if (callKey != null || CrisisDetector.isCrisis(text)) {
-      intent = 'NAVIGATE_EMERGENCY';
-    } else if (mindfulnessId != null) {
-      intent = 'NAVIGATE_MINDFULNESS_SESSION';
-    } else if (text.contains('home') || text.contains('go back') || text.contains('exit')) {
-      intent = 'NAVIGATE_HOME';
-    } else if (text.contains('emergency') || text.contains('crisis') || text.contains('urgent') || text.contains('support') || text.contains('call')) {
-      intent = 'NAVIGATE_EMERGENCY';
-    } else if (text.contains('sleep') || text.contains('rest') || text.contains('bedtime') || text.contains('hygiene') || text.contains('insomnia')) {
-      intent = 'NAVIGATE_SLEEP';
-    } else if (text.contains('mindful') || text.contains('meditat') || text.contains('aware') || text.contains('present')) {
-      intent = 'NAVIGATE_MINDFULNESS';
-    } else if (text.contains('mood') || text.contains('feeling') || text.contains('emotion') || text.contains('track')) {
-      intent = 'NAVIGATE_MOOD';
-    } 
-    // NLU: Exercise Commands
-    else if (text.contains('stop') || text.contains('cancel') || text.contains('pause')) {
-      intent = 'STOP_EXERCISE';
-    } else {
-      final detectedExId = BreathingDetector.detectExerciseIntent(text);
-      if (detectedExId != null) {
-        intent = 'START_EXERCISE';
-        exerciseToStart = exercises.firstWhere((e) => e['id'] == detectedExId);
-      } else if (text.contains('help') || text.contains('what can i say')) {
-        intent = 'HELP';
+    if (callKey != null || isCrisis) {
+      await _stopExerciseForNavigation();
+      await speak('Opening Emergency Support.');
+      _navigateTo(EmergencySupportPage(initialCallKey: callKey));
+      return;
+    }
+
+    // Layer 2: Affirmation
+    if (_pendingExerciseId != null && _isAffirmation(text)) {
+      final pendingId = _pendingExerciseId!;
+      _pendingExerciseId = null;
+      final ex = exercises.firstWhere(
+        (e) => e['id'] == pendingId,
+        orElse: () => <String, dynamic>{},
+      );
+      if (ex.isNotEmpty && !isAnimating) {
+        statusLabel = 'Starting ${ex['title']}';
+        notifyListeners();
+        runExercise(ex);
       }
+      return;
     }
 
-    // Dialogue Manager: Act on Intent
+    _pendingExerciseId = null;
+
+    // Layer 3: Navigation keywords
+    if (text.contains('home') ||
+        text.contains('go back') ||
+        text.contains('exit')) {
+      await _stopExerciseForNavigation();
+      speak('Going back to the home page.');
+      if (_context != null && _context!.mounted) {
+        Navigator.of(_context!).pop();
+      }
+      return;
+    }
+    if (text.contains('emergency') ||
+        text.contains('crisis') ||
+        text.contains('urgent') ||
+        text.contains('support') ||
+        text.contains('call')) {
+      await _stopExerciseForNavigation();
+      await speak('Opening Emergency Support.');
+      _navigateTo(EmergencySupportPage(initialCallKey: null));
+      return;
+    }
+    if (text.contains('sleep') ||
+        text.contains('rest') ||
+        text.contains('bedtime') ||
+        text.contains('hygiene') ||
+        text.contains('insomnia')) {
+      await _stopExerciseForNavigation();
+      await speak('Opening Sleep Hygiene.');
+      _navigateTo(const SleepVuiScreen());
+      return;
+    }
+    if (mindfulnessId != null) {
+      await _stopExerciseForNavigation();
+      await speak('Starting mindfulness session.');
+      _navigateTo(MindfulnessPage(initialSessionId: mindfulnessId));
+      return;
+    }
+    if (text.contains('mindful') ||
+        text.contains('meditat') ||
+        text.contains('aware') ||
+        text.contains('present')) {
+      await _stopExerciseForNavigation();
+      await speak('Opening Mindfulness.');
+      _navigateTo(const MindfulnessPage());
+      return;
+    }
+    if (text.contains('mood') ||
+        text.contains('feeling') ||
+        text.contains('emotion') ||
+        text.contains('track')) {
+      await _stopExerciseForNavigation();
+      await speak('Opening Mood Tracking.');
+      _navigateTo(const MoodTrackingPage());
+      return;
+    }
+
+    // Layer 4: Exercise control
+    if (text.contains('stop') ||
+        text.contains('cancel') ||
+        text.contains('pause')) {
+      if (isAnimating) {
+        circleController.stop();
+        activeId = null;
+        phaseLabel = 'Exercise stopped.';
+        statusLabel = 'Tap the mic to speak';
+        notifyListeners();
+        await speak('Exercise stopped.');
+      } else {
+        await speak('There is no exercise running right now.');
+      }
+      return;
+    }
+
+    final detectedExId = BreathingDetector.detectExerciseIntent(text);
+    if (detectedExId != null) {
+      if (!isAnimating) {
+        final ex = exercises.firstWhere((e) => e['id'] == detectedExId);
+        statusLabel = 'Starting ${ex['title']}';
+        notifyListeners();
+        runExercise(ex);
+      }
+      return;
+    }
+
+    if (text.contains('help') || text.contains('what can i say')) {
+      statusLabel = 'Try: "Start Box Breathing" or ask a question';
+      notifyListeners();
+      await speak(
+        'You can say start box breathing, start 4 7 8 breathing, stop exercise, '
+        'or ask questions like "what are breathing exercises" or '
+        '"how do breathing exercises help mental health". '
+        'You can also tell me how you are feeling.',
+      );
+      return;
+    }
+
+    // Layer 5: FAQ + emotional pain-point detection
+    final faqResponse = BreathingFaqDetector.process(text);
+
+    if (faqResponse.requiresEmergency) {
+      await _stopExerciseForNavigation();
+      statusLabel = 'Redirecting to Emergency Support…';
+      notifyListeners();
+      await speak(faqResponse.message);
+      _navigateTo(const EmergencySupportPage());
+      return;
+    }
+
+    if (faqResponse.intent != BreathingFaqIntent.unknown) {
+      _pendingExerciseId = faqResponse.suggestedExerciseId;
+      statusLabel = _faqStatusLabel(faqResponse.intent);
+      notifyListeners();
+      await speak(faqResponse.message);
+      return;
+    }
+
+    // Layer 6: Complete fallback
+    statusLabel = 'Not sure. Try an exercise name or ask a question.';
+    notifyListeners();
+    await speak(
+      'Sorry, I have no idea about that. '
+      'Try saying start box breathing, or ask me '
+      '"what are breathing exercises".',
+    );
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  bool _isAffirmation(String text) {
+    final Set<String> targetTokens = {
+      'yes',
+      'yeah',
+      'yep',
+      'yup',
+      'sure',
+      'okay',
+      'ok',
+      'alright',
+      'go ahead',
+      'please do',
+      'sounds good',
+      'do it',
+      'start it',
+      "let's go",
+      'lets go',
+      'begin',
+      'start',
+      'absolutely',
+      'definitely',
+      'of course',
+      'please',
+      'go on',
+    };
+
+    final List<String> inputTokens = text.split(' ');
+
+    for (final token in inputTokens) {
+      if (targetTokens.contains(token)) return true;
+    }
+
+    return targetTokens.any((phrase) => text.contains(phrase));
+  }
+
+  String _faqStatusLabel(BreathingFaqIntent intent) {
     switch (intent) {
-      case 'NAVIGATE_HOME':
-        await _stopExerciseForNavigation();
-        speak('Going back to the home page.');
-        if (_context != null && _context!.mounted) Navigator.of(_context!).popUntil((r) => r.isFirst);
-        return;
-      case 'NAVIGATE_EMERGENCY':
-        await _stopExerciseForNavigation();
-        navigationTarget = EmergencySupportPage(initialCallKey: callKey);
-        speak('Opening Emergency Support.');
-        break;
-      case 'NAVIGATE_SLEEP':
-        await _stopExerciseForNavigation();
-        navigationTarget = const SleepVuiScreen();
-        speak('Opening Sleep Hygiene.');
-        break;
-      case 'NAVIGATE_MINDFULNESS_SESSION':
-        await _stopExerciseForNavigation();
-        navigationTarget = MindfulnessPage(initialSessionId: mindfulnessId);
-        speak('Starting mindfulness session.');
-        break;
-      case 'NAVIGATE_MINDFULNESS':
-        await _stopExerciseForNavigation();
-        navigationTarget = const MindfulnessPage();
-        speak('Opening Mindfulness.');
-        break;
-      case 'NAVIGATE_MOOD':
-        await _stopExerciseForNavigation();
-        navigationTarget = const MoodTrackingPage();
-        speak('Opening Mood Tracking.');
-        break;
-      case 'STOP_EXERCISE':
-        if (isAnimating) {
-          circleController.stop();
-          activeId = null;
-          phaseLabel = 'Exercise stopped.';
-          statusLabel = 'Tap the mic to speak';
-          notifyListeners();
-          await speak('Exercise stopped.');
-        } else {
-          await speak('There is no exercise running right now.');
-        }
-        return;
-      case 'START_EXERCISE':
-        if (exerciseToStart != null && !isAnimating) {
-          statusLabel = 'Starting ${exerciseToStart['title']}';
-          notifyListeners();
-          runExercise(exerciseToStart);
-        }
-        return;
-      case 'HELP':
-        statusLabel = 'Try: Start Box Breathing';
-        notifyListeners();
-        await speak('You can say start box breathing, start 4 7 8 breathing, stop exercise, or navigate to other modules.');
-        return;
-      case 'UNKNOWN':
+      case BreathingFaqIntent.suggestForStress:
+      case BreathingFaqIntent.suggestForAnxiety:
+      case BreathingFaqIntent.suggestForSleep:
+      case BreathingFaqIntent.suggestForAnger:
+      case BreathingFaqIntent.suggestForPanic:
+      case BreathingFaqIntent.anxietyPanic:
+        return 'Say "yes" to start the suggested exercise';
+      case BreathingFaqIntent.emergencyRedirect:
+        return 'Redirecting to Emergency Support…';
       default:
-        statusLabel = 'Not sure. Try an exercise name.';
-        notifyListeners();
-        await speak('I heard "$text". Try saying start box breathing or stop exercise.');
-        return;
+        return 'Tap the mic to speak';
     }
+  }
 
-    // 5. RESPONSE (Navigation execution)
-    if (_context != null && _context!.mounted && navigationTarget != null) {
-      Navigator.of(_context!).pushReplacement(MaterialPageRoute(builder: (_) => navigationTarget!));
+  void _navigateTo(Widget page) {
+    if (_context != null && _context!.mounted) {
+      Navigator.of(_context!).push(MaterialPageRoute(builder: (_) => page));
     }
   }
 
@@ -324,7 +447,7 @@ class BreathingController extends ChangeNotifier {
     await tts.stop();
   }
 
-  // ── Exercise Runner ──
+  // ── Exercise Runner ────────────────────────────────────────────────────────
 
   Future<void> runExercise(Map<String, dynamic> ex) async {
     if (isAnimating) return;

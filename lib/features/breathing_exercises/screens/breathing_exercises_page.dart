@@ -1,3 +1,4 @@
+// screens/breathing_exercises_page.dart
 import 'package:flutter/material.dart';
 import 'package:mindmate/core/widgets/voice_mic_button.dart';
 import '../controllers/breathing_controller.dart';
@@ -54,7 +55,10 @@ class _BreathingExercisesPageState extends State<BreathingExercisesPage>
                 icon: const Icon(Icons.arrow_back_rounded, size: 20),
               ),
             ),
-            title: const Text('Breathing Exercises', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text(
+              'Breathing Exercises',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             backgroundColor: Colors.transparent,
             elevation: 0,
             foregroundColor: cs.onSurface,
@@ -81,8 +85,12 @@ class _BreathingExercisesPageState extends State<BreathingExercisesPage>
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      const Color(0xFF4CAF82).withOpacity(0.6),
-                                      const Color(0xFF4CAF82).withOpacity(0.1),
+                                      const Color(
+                                        0xFF4CAF82,
+                                      ).withValues(alpha: 0.6),
+                                      const Color(
+                                        0xFF4CAF82,
+                                      ).withValues(alpha: 0.1),
                                     ],
                                   ),
                                 ),
@@ -127,19 +135,23 @@ class _BreathingExercisesPageState extends State<BreathingExercisesPage>
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.08),
+                            color: color.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: color.withOpacity(0.25)),
+                            border: Border.all(
+                              color: color.withValues(alpha: 0.25),
+                            ),
                           ),
                           child: ListTile(
                             contentPadding: const EdgeInsets.all(14),
                             leading: CircleAvatar(
-                              backgroundColor: color.withOpacity(0.2),
+                              backgroundColor: color.withValues(alpha: 0.2),
                               child: Icon(Icons.self_improvement, color: color),
                             ),
                             title: Text(
                               ex['title'] as String,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             subtitle: Text(ex['subtitle'] as String),
                             trailing: isThisActive
@@ -154,10 +166,12 @@ class _BreathingExercisesPageState extends State<BreathingExercisesPage>
                                 : Icon(
                                     Icons.play_arrow_rounded,
                                     color: _controller.isAnimating
-                                        ? color.withOpacity(0.35)
+                                        ? color.withValues(alpha: 0.35)
                                         : color,
                                   ),
-                            onTap: _controller.isAnimating ? null : () => _controller.runExercise(ex),
+                            onTap: _controller.isAnimating
+                                ? null
+                                : () => _controller.runExercise(ex),
                           ),
                         );
                       }),

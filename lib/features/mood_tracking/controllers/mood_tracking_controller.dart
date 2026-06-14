@@ -55,6 +55,8 @@ class MoodTrackingController extends ChangeNotifier {
   bool isProcessing = false;
   bool _hasFinalResult = false;
   bool isBotThinking = false;
+  // Incremented on every startListening; stopListening ignores calls from old sessions.
+  int _sessionId = 0;
   String recognizedText = '';
   String statusLabel = 'Tap the mic and speak';
 
@@ -91,9 +93,10 @@ class MoodTrackingController extends ChangeNotifier {
       },
       onStatus: (s) {
         debugPrint('STT status: $s');
-        // FIXED: Removed the stopListening() call from onStatus callback
-        // This prevents race conditions with onResult callback.
-        // Only onResult callback will trigger stopListening() when finalResult=true.
+        // Intentionally empty — stopListening is driven only by onResult (finalResult=true)
+        // or the user tapping the mic. The old pattern of calling stopListening() here
+        // caused the double-processing bug (status 'done' fires after onResult already
+        // consumed the session, resulting in a second _handleVoiceCommand call).
       },
     );
     notifyListeners();
@@ -143,6 +146,11 @@ class MoodTrackingController extends ChangeNotifier {
       return;
     }
     await tts.stop();
+
+    // Claim a new session. Any pending stopListening from the previous session
+    // will see a mismatched id and bail out immediately.
+    final mySession = ++_sessionId;
+
     isListening = true;
     _hasFinalResult = false;
     recognizedText = '';
@@ -151,12 +159,12 @@ class MoodTrackingController extends ChangeNotifier {
 
     await sttEngine.listen(
       onResult: (r) {
+        if (_sessionId != mySession) return; // stale callback — ignore
         recognizedText = r.recognizedWords;
         notifyListeners();
-        // FIXED: Only process when we get finalResult and haven't already processed
         if (r.finalResult && !_hasFinalResult && !isProcessing) {
           _hasFinalResult = true;
-          stopListening(); // No need to await; stopListening has its own guard
+          stopListening(sessionId: mySession);
         }
       },
       listenFor: const Duration(seconds: 30),
@@ -165,9 +173,21 @@ class MoodTrackingController extends ChangeNotifier {
     );
   }
 
-  Future<void> stopListening() async {
+  // [sessionId] is passed by onResult so we can detect stale re-entrancy.
+  // When called by the user tapping the mic (onMicTap), sessionId is omitted
+  // and we proceed regardless (user intent always wins).
+  Future<void> stopListening({int? sessionId}) async {
+    // Reject stale automatic triggers (e.g. STT status 'done' arriving after
+    // onResult already consumed this session).
+    if (sessionId != null && sessionId != _sessionId) return;
     if (isProcessing) return;
     isProcessing = true;
+
+    // Invalidate the session immediately so any subsequent STT callbacks
+    // (status 'done', extra onResult) that arrive while we are processing
+    // are silently dropped.
+    _sessionId++;
+
     await sttEngine.stop();
     isListening = false;
 
@@ -297,6 +317,8 @@ class MoodTrackingController extends ChangeNotifier {
       }
       if (matched != null) {
         await selectMood(matched);
+        // Return here — do NOT fall through to the Q&A block.
+        return;
       } else {
         await speak(
           'I heard "$spoken" but please tap or say your mood: Great, Good, Okay, Sad, Struggling, or Angry.',
@@ -308,7 +330,7 @@ class MoodTrackingController extends ChangeNotifier {
     }
 
     // ── Main Q&A Flow ──────────────────────────────────────────────────────
-    // User asks a question → keyword match in mood_qa_data → speak answer → loop (never ends)
+    // User asks a question → keyword match in mood_qa_data → speak answer → loop
 
     _addUserTurn(spoken);
     isBotThinking = true;
