@@ -227,9 +227,6 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                               session: s,
                               onTap: () {
                                 switch (s['title']) {
-                                  case 'Progressive Relaxation':
-                                    _ctrl.runProgressiveRelaxation();
-                                    break;
                                   case 'Mindful Observation':
                                     _ctrl.runMindfulObservation();
                                     break;

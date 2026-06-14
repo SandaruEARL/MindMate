@@ -7,13 +7,6 @@ import 'package:flutter/material.dart';
 
 final List<Map<String, dynamic>> kMindfulnessSessions = [
   {
-    'title': 'Progressive Relaxation',
-    'subtitle': '5 min · Full-body awareness',
-    'icon': Icons.accessibility_new_rounded,
-    'color': const Color(0xFF9C6FDE),
-    'duration': const Duration(minutes: 5),
-  },
-  {
     'title': 'Mindful Observation',
     'subtitle': '3 min · Focus on the present',
     'icon': Icons.visibility_rounded,
@@ -62,8 +55,8 @@ final List<Map<String, dynamic>> kGuidedMeditationSessions = [
 
 // ── Session Cue Scripts ───────────────────────────────────────────────────────
 
-const kProgressiveRelaxationCues = <Map<String, dynamic>>[
-  {'offset': Duration.zero, 'text': "Welcome... Let's begin the Progressive Relaxation meditation... Find a comfortable posture... close your eyes... and allow your arms to rest naturally... Take a deep... slow breath in... and let it out."},
+const kBodyScanCues = <Map<String, dynamic>>[
+  {'offset': Duration.zero, 'text': "Welcome... Let's begin the Body Scan meditation... Find a comfortable posture... close your eyes... and allow your arms to rest naturally... Take a deep... slow breath in... and let it out."},
   {'offset': Duration(seconds: 25), 'text': "Bring your awareness... to the simple sensation of breathing... Feel the air entering your nostrils... filling your lungs... and gently leaving your body... Settle into this present moment."},
   {'offset': Duration(seconds: 50), 'text': "Now... gently shift your attention... to the top of your head... Focus on your scalp... Notice any sensations here... tingling... heat... or tightness... Just observe."},
   {'offset': Duration(seconds: 75), 'text': "Move your focus down... to your forehead and eyes... Let your eyelids feel heavy... Relax your cheeks... your lips... and especially your jaw... letting it hang slightly loose."},

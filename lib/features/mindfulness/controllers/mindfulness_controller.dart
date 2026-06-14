@@ -102,7 +102,7 @@ class MindfulnessController extends ChangeNotifier {
   }
 
   String _getSessionName(String id) {
-    if (id == 'progressive_relaxation') return 'Progressive Relaxation';
+    if (id == 'body_scan') return 'Body Scan';
     final all = [...kMindfulnessSessions, ...kGuidedMeditationSessions];
     final match = all.where((s) => s['id'] == id).firstOrNull;
     if (match != null) return match['title'] as String;
@@ -349,11 +349,11 @@ class MindfulnessController extends ChangeNotifier {
       );
       return;
     }
-    if (text.contains('what is progressive relaxation') || text.contains('explain progressive relaxation') || text.contains('how does progressive relaxation help')) {
+    if (text.contains('what is body scan') || text.contains('explain body scan') || text.contains('how does body scan help')) {
       await speakConversationalResponse(
-        'A progressive relaxation is a mindfulness practice where you mentally scan your body from head to toe, paying attention to physical sensations. '
+        'A body scan is a mindfulness practice where you mentally scan your body from head to toe, paying attention to physical sensations. '
         'It helps you reconnect with your body and release stored physical tension. '
-        'Would you like to start the Progressive Relaxation session now, or ask another question?',
+        'Would you like to start the Body Scan session now, or ask another question?',
       );
       return;
     }
@@ -384,7 +384,7 @@ class MindfulnessController extends ChangeNotifier {
     if (text.contains('what is stress') || text.contains('how to manage stress') || text.contains('help with stress')) {
       await speakConversationalResponse(
         'Stress is how your body responds to daily challenges and pressures. '
-        'You can manage it by setting boundaries, taking deep breaths, and using a Progressive Relaxation or breathing exercises to relax your muscles. '
+        'You can manage it by setting boundaries, taking deep breaths, and using a Body Scan or breathing exercises to relax your muscles. '
         'Would you like to try a meditation session now, or ask something else?',
       );
       return;
@@ -400,7 +400,7 @@ class MindfulnessController extends ChangeNotifier {
     }
     if (text.contains('what can i say') || text.contains('features') || text.contains('how does this work') || text.contains('help')) {
       await speakConversationalResponse(
-        'You can say, "Start Progressive Relaxation", "Start Anxiety Reduction", "Start Loving Kindness", "Start Focus", "Start Gratitude", or "Start Beginner Meditation". '
+        'You can say, "Start Body Scan", "Start Anxiety Reduction", "Start Loving Kindness", "Start Focus", "Start Gratitude", or "Start Beginner Meditation". '
         'You can also ask questions like, "What is mindfulness?", "How do I manage anxiety?", or say "Go back". '
         'What would you like to do now?',
       );
@@ -480,12 +480,12 @@ class MindfulnessController extends ChangeNotifier {
         recommendedSession = detectedSession;
         await _startRecommendedSession();
       } else if (text.contains('body') || text.contains('scan') || text.contains('one') || text.contains('first')) {
-        chatHistory.add(MindfulnessMessage('Starting Progressive Relaxation…', isUser: false));
+        chatHistory.add(MindfulnessMessage('Starting Body Scan…', isUser: false));
         notifyListeners();
-        await runProgressiveRelaxation();
+        await runBodyScan();
       } else {
         await speakConversationalResponse(
-          'I did not catch which session you want. You can say Progressive Relaxation, Loving Kindness, Anxiety Reduction, Focus, Gratitude, Mindful Observation, or Beginner Meditation.',
+          'I did not catch which session you want. You can say Body Scan, Loving Kindness, Anxiety Reduction, Focus, Gratitude, Mindful Observation, or Beginner Meditation.',
         );
       }
       return;
@@ -516,11 +516,11 @@ class MindfulnessController extends ChangeNotifier {
         text.contains('overwhelm') || text.contains('burnout') || text.contains('burnt out')) {
       detectedEmotion = 'stress';
       currentState = 'awaiting_session_confirmation';
-      recommendedSession = 'progressive_relaxation';
+      recommendedSession = 'body_scan';
       notifyListeners();
       await speakConversationalResponse(
         'I hear that you are carrying a lot right now. '
-        'The Progressive Relaxation is the most effective way to release stress stored in your body — it guides you through each part to let go of tension. '
+        'The Body Scan is the most effective way to release stress stored in your body — it guides you through each part to let go of tension. '
         'Would you like me to start it for you?',
       );
       return;
@@ -580,11 +580,11 @@ class MindfulnessController extends ChangeNotifier {
         text.contains('furious') || text.contains('rage')) {
       detectedEmotion = 'anger';
       currentState = 'awaiting_session_confirmation';
-      recommendedSession = 'progressive_relaxation';
+      recommendedSession = 'body_scan';
       notifyListeners();
       await speakConversationalResponse(
         'I understand you are feeling frustrated. '
-        'A Progressive Relaxation can help by grounding you in your body and releasing the physical tension that comes with intense emotions. '
+        'A Body Scan can help by grounding you in your body and releasing the physical tension that comes with intense emotions. '
         'Would you like me to start it for you?',
       );
       return;
@@ -680,26 +680,26 @@ class MindfulnessController extends ChangeNotifier {
       notifyListeners();
       
       if (text.contains('mindfulness') || text.contains('meditation') || text.contains('meditate')) {
-        currentState = 'idle'; // Reset state so the direct command catcher handles their reply
-        activeTab = 'chat'; // Switch to chat screen
+        currentState = 'awaiting_meditation_choice';
         notifyListeners();
         await speakConversationalResponse(
           'Mindfulness and meditation can help calm your nervous system. '
-          'We have sessions like Mindful Observation, Loving Kindness, Beginner Meditation, Anxiety Reduction, Focus and Concentration, and Gratitude. '
-          'Which session would you like me to start for you?',
+          'We have sessions like Beginner Meditation, Focus, Loving Kindness, Gratitude, Anxiety Reduction, and Mindful Observation. '
+          'Which session would you like to start?',
         );
+        return;
       } else if (text.contains('anxiety')) {
         await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Anxiety Reduction meditation?');
       } else if (text.contains('stress')) {
         await speakConversationalResponse('Stress is how your body responds to pressures. You can manage it by taking deep breaths. Would you like to try a meditation?');
       } else {
         chatHistory.add(const MindfulnessMessage(
-          "I am sorry, I didn't catch that. Try saying 'Start Progressive Relaxation' or ask me about mindfulness.",
+          "I am sorry, I didn't catch that. Try saying 'Start Body Scan' or ask me about mindfulness.",
           isUser: false,
         ));
         statusLabel = 'Waiting for input';
         notifyListeners();
-        await tts.speak("I am sorry, I didn't catch that. Try saying 'Start Progressive Relaxation' or ask me about mindfulness.");
+        await tts.speak("I am sorry, I didn't catch that. Try saying 'Start Body Scan' or ask me about mindfulness.");
       }
     }
   }
@@ -708,10 +708,10 @@ class MindfulnessController extends ChangeNotifier {
 
   Future<void> _startRecommendedSession() async {
     switch (recommendedSession) {
-      case 'progressive_relaxation':
-        chatHistory.add(MindfulnessMessage('Starting Progressive Relaxation…', isUser: false));
+      case 'body_scan':
+        chatHistory.add(MindfulnessMessage('Starting Body Scan…', isUser: false));
         notifyListeners();
-        await runProgressiveRelaxation();
+        await runBodyScan();
         break;
       case 'loving_kindness':
         chatHistory.add(MindfulnessMessage('Starting Loving Kindness…', isUser: false));
@@ -747,10 +747,10 @@ class MindfulnessController extends ChangeNotifier {
     }
   }
 
-  Future<void> runProgressiveRelaxation() => _startSession(
-        title: 'Progressive Relaxation',
+  Future<void> runBodyScan() => _startSession(
+        title: 'Body Scan',
         duration: const Duration(minutes: 5),
-        cues: kProgressiveRelaxationCues,
+        cues: kBodyScanCues,
         playMusic: true,
       );
 
