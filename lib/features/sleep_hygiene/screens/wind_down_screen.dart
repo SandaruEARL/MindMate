@@ -229,7 +229,7 @@ class _WindDownScreenState extends State<WindDownScreen>
           ),
           const SizedBox(width: 16),
           const Text(
-            'Wind-Down Routine',
+            'Bedtime Routine',
             style: TextStyle(
               fontSize:   22,
               fontWeight: FontWeight.bold,
@@ -407,7 +407,7 @@ class _WindDownScreenState extends State<WindDownScreen>
           ),
           const SizedBox(height: 32),
           const Text(
-            'Wind-down complete',
+            'Bedtime routine complete',
             style: TextStyle(
               fontSize:   24,
               fontWeight: FontWeight.bold,

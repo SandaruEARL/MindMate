@@ -54,6 +54,13 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
   // Indigo — consistent with app-wide brand colour
   static const Color _accent = Color(0xFF3F51B5);
 
+  final Set<int> _animatedSet = {};
+
+  bool   _micVisible       = true;
+  double _lastScrollOffset = 0.0;
+
+
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +69,7 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
     // attachContext must come before init so TTS-triggered navigation works
     _controller.attachContext(context);
     _controller.init();
+    _scrollController.addListener(_onScrollMic);
   }
 
   @override
@@ -74,7 +82,7 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
 
   void _onStateChange() {
     if (!mounted) return;
-    setState(() {});
+    setState(() => _micVisible = true);
     // Scroll to the latest message
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -86,6 +94,16 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
       }
     });
   }
+
+  void _onScrollMic() {
+    final offset = _scrollController.offset;
+    final goingDown = offset > _lastScrollOffset;
+    _lastScrollOffset = offset;
+    if (goingDown == _micVisible) {
+      setState(() => _micVisible = !goingDown);
+    }
+  }
+
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -174,26 +192,11 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
             // ── Activity buttons ───────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _ActivityButton(
-                      emoji:    '🌬️',
-                      label:    'Bedtime routine',
-                      disabled: isBusy,
-                      onTap: () => _controller.sendTextCommand('Wind-down routine', 'wind down'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ActivityButton(
-                      emoji:    '💪',
-                      label:    'Muscle relaxation',
-                      disabled: isBusy,
-                      onTap: () => _controller.sendTextCommand('Muscle relaxation', 'anxious need pmr'),
-                    ),
-                  ),
-                ],
+              child: _ActivityButton(
+                emoji:    '',
+                label:    'Bedtime routine',
+                disabled: isBusy,
+                onTap: () => _controller.sendTextCommand('Wind-down routine', 'wind down'),
               ),
             ),
 
@@ -227,7 +230,11 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
                           key:         ValueKey(index),
                           message:     _controller.chatHistory[index],
                           accentColor: _accent,
-                          animate:     index == _controller.chatHistory.length - 1,
+                          animate: index == _controller.chatHistory.length - 1
+                              && !_animatedSet.contains(index),
+                          onAnimationDone: () {
+                            if (mounted) setState(() => _animatedSet.add(index));
+                          },
                         );
                       },
                     ),
@@ -238,23 +245,18 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
                     left:   0,
                     right:  0,
                     bottom: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end:   Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.white.withValues(alpha: 0.95),
-                          ],
+                    child: AnimatedSlide(
+                      offset:   _micVisible ? Offset.zero : const Offset(0, 1),
+                      duration: const Duration(milliseconds: 280),
+                      curve:    Curves.easeInOut,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        child: VoiceMicButton(
+                          isListening:    _controller.isListening,
+                          onTap:          _controller.onMicTap,
+                          statusLabel:    _controller.statusLabel,
+                          recognizedText: _controller.recognizedText,
                         ),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                      child: VoiceMicButton(
-                        isListening:    _controller.isListening,
-                        onTap:          _controller.onMicTap,
-                        statusLabel:    _controller.statusLabel,
-                        recognizedText: _controller.recognizedText,
                       ),
                     ),
                   ),
@@ -385,11 +387,13 @@ class _ChatBubble extends StatefulWidget {
     required this.message,
     required this.accentColor,
     this.animate = false,
+    this.onAnimationDone,
   });
 
   final SleepMessage message;
   final Color        accentColor;
   final bool         animate;
+  final VoidCallback? onAnimationDone;
 
   @override
   State<_ChatBubble> createState() => _ChatBubbleState();
@@ -428,6 +432,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
     _timer = Timer.periodic(wordDuration, (timer) {
       if (index >= words.length) {
         timer.cancel();
+        widget.onAnimationDone?.call();
         return;
       }
       setState(() {
