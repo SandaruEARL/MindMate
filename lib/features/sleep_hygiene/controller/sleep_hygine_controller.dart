@@ -299,6 +299,102 @@ class SleepController extends ChangeNotifier {
         'sleep requirement', 'optimal sleep', '8 hours enough',
         '6 hours enough', 'is 5 hours enough',
       ],
+      'napping': [
+        'nap', 'napping', 'power nap', 'afternoon sleep', 'daytime sleep',
+        'daytime nap', 'should i nap', 'is napping good', 'how long to nap',
+        'best time to nap', 'nap too long', 'nap affect night sleep',
+      ],
+      'sleep_environment': [
+        'bedroom', 'sleep environment', 'room temperature', 'dark room',
+        'blackout curtains', 'white noise', 'noise and sleep', 'mattress',
+        'pillow', 'too hot to sleep', 'too cold to sleep', 'light in bedroom',
+        'sleep setup', 'ideal bedroom', 'bedroom temperature',
+      ],
+      'caffeine_sleep': [
+        'caffeine and sleep', 'coffee and sleep', 'tea and sleep',
+        'caffeine before bed', 'coffee before bed', 'caffeine affect sleep',
+        'how long caffeine last', 'caffeine half life', 'when to stop coffee',
+        'cut off caffeine', 'does caffeine affect sleep',
+      ],
+      'exercise_sleep': [
+        'exercise and sleep', 'workout and sleep', 'gym and sleep',
+        'exercise before bed', 'working out at night', 'does exercise help sleep',
+        'best time to exercise for sleep', 'running and sleep', 'sport and sleep',
+        'physical activity and sleep', 'exercise improve sleep',
+      ],
+      'melatonin': [
+        'melatonin', 'sleep supplement', 'sleeping pill', 'sleep aid',
+        'should i take melatonin', 'does melatonin work', 'melatonin dose',
+        'valerian', 'magnesium for sleep', 'natural sleep aid',
+        'medication for sleep', 'sleep tablet',
+      ],
+      'sleep_stages': [
+        'sleep stages', 'rem sleep', 'deep sleep', 'light sleep',
+        'sleep cycle', 'what is rem', 'what is deep sleep', 'what is light sleep',
+        'how many sleep cycles', 'sleep stage', 'nrem',
+        'what happens when i sleep', 'stages of sleep',
+      ],
+      'circadian_rhythm': [
+        'circadian rhythm', 'body clock', 'internal clock', 'sleep wake cycle',
+        'circadian', 'biological clock', 'what is circadian', 'reset body clock',
+        'how does body clock work', 'sleep wake rhythm',
+      ],
+      'insomnia': [
+        'insomnia', 'sleep disorder', 'chronic sleep problem',
+        'never sleep well', 'sleep problem every night', 'cant sleep most nights',
+        "can't sleep most nights", 'cbt i', 'cognitive behavioural therapy sleep',
+        'do i have insomnia', 'what is insomnia', 'treat insomnia',
+      ],
+      'stress_sleep': [
+        'stress and sleep', 'anxiety and sleep', 'worried cant sleep',
+        'stressed cant sleep', 'overthinking at night', 'mind racing at night',
+        'anxious at bedtime', 'stress affect sleep', 'anxiety affect sleep',
+        'cant switch off', "can't switch off", 'racing thoughts at night',
+      ],
+      'sleep_schedule': [
+        'sleep schedule', 'consistent sleep time', 'same bedtime', 'same wake time',
+        'consistent wake time', 'fix sleep schedule', 'irregular sleep',
+        'sleep at different times', 'sleep consistency', 'regular bedtime',
+        'set sleep time', 'sleep routine schedule',
+      ],
+      'alcohol_sleep': [
+        'alcohol and sleep', 'drinking and sleep', 'alcohol before bed',
+        'does alcohol help sleep', 'alcohol affect sleep', 'wine before bed',
+        'beer before bed', 'drinking affect sleep', 'alcohol make you sleep',
+        'alcohol ruin sleep', 'alcohol sleep quality',
+      ],
+      'morning_grogginess': [
+        'wake up tired', 'groggy in the morning', 'sleep inertia',
+        'still tired after sleep', 'exhausted in the morning', 'not refreshed after sleep',
+        'why am i tired after sleeping', 'tired when i wake', 'morning fatigue',
+        'why do i feel groggy', 'heavy when i wake up', 'feel terrible in morning',
+      ],
+      'sleep_debt': [
+        'sleep debt', 'catch up on sleep', 'catching up sleep', 'sleep deprivation',
+        'can i catch up sleep', 'make up sleep', 'weekend sleep',
+        'sleeping in on weekend', 'sleep less during week', 'sleep deficit',
+        'cumulative sleep loss', 'not enough sleep for days',
+      ],
+      'dreams_nightmares': [
+        'dream', 'nightmare', 'bad dream', 'vivid dream', 'why do i dream',
+        'what causes nightmares', 'recurring dream', 'dreaming a lot',
+        'not dreaming', 'remember dreams', 'lucid dream', 'night terror',
+        'does dreaming mean good sleep',
+      ],
+      'waking_night': [
+        'wake up at night', 'waking up at night', 'middle of night',
+        'keep waking up', 'wake up multiple times', 'cant stay asleep',
+        "can't stay asleep", 'light sleeper', 'sleep is broken',
+        'wake up 3am', 'wake up 2am', 'wake up during night',
+      ],
+      'sleep_paralysis': [
+        'sleep paralysis', 'cant move when waking', "can't move when waking",
+        'frozen when waking', 'paralysed when waking', 'paralyzed when waking',
+        'wake up and cant move', "wake up and can't move",
+        'feel stuck when waking', 'body wont move when i wake',
+        'shadow when sleeping', 'presence in room sleep',
+        'hallucination waking up', 'scary waking experience',
+      ],
     };
 
     final hasSleepContext = normalized.contains('sleep') ||
@@ -588,6 +684,39 @@ class SleepController extends ChangeNotifier {
       return;
     }
 
+    // 0.3. Action-intent: open wind-down screen - MUST run before FAQ matcher
+    if ((text.contains('start') || text.contains('begin') ||
+        text.contains('do my') || text.contains('open') ||
+        text.contains('launch') || text.contains('let\'s do') ||
+        text.contains('lets do') || text.contains('begin my')) &&
+        (text.contains('bedtime routine') ||
+            text.contains('wind down')        ||
+            text.contains('wind-down')        ||
+            text.contains('night routine')    ||
+            text.contains('sleep routine'))) {
+      _consecutiveFallbacks = 0;
+      await _speak("Starting your bedtime routine now.");
+      await _openWindDownScreen();
+      return;
+    }
+
+
+    if (text.contains('going to bed')        ||
+        text.contains("i'm going to bed")    ||
+        text.contains('im going to bed')     ||
+        text.contains('i want to sleep now') ||
+        text.contains('ready for bed')       ||
+        text.contains('ready to sleep')      ||
+        text.contains('time for bed')        ||
+        text.contains('help me wind down')   ||
+        text.contains('help me sleep')       ||
+        text.contains('i need to relax')) {
+      _consecutiveFallbacks = 0;
+      await _speak("Starting your bedtime routine now.");
+      await _openWindDownScreen();
+      return;
+    }
+
     // ── 0.5. FAQ keyword-set matching — catches any phrasing of the 5 core questions
     final faqMatch = _matchFaq(text);
     if (faqMatch != null) {
@@ -644,9 +773,164 @@ class SleepController extends ChangeNotifier {
             );
           }
           return;
+
         case 'sleep_duration':
           await _speak("For adults aged 18 to 30, 7 to 9 hours a night is the recommended range.");
           return;
+        case 'napping':
+          await _speak(
+            "Naps can help - but timing is everything. "
+                "The sweet spot is 10 to 20 minutes, before 3pm. "
+                "Any longer and you risk waking up groggy - "
+                "and late naps make it harder to fall asleep at night.",
+          );
+          return;
+
+        case 'sleep_environment':
+          await _speak(
+            "Your bedroom setup matters more than most people think - "
+                "cool temperature around 16 to 19 degrees - "
+                "as dark as possible with blackout curtains if you can - "
+                "and quiet, or use white noise to block out sounds. "
+                "Try to keep your bed for sleep only.",
+          );
+          return;
+
+        case 'caffeine_sleep':
+          await _speak(
+            "Caffeine has a half-life of around 6 hours - "
+                "so a 3pm coffee is still half-strength at 9pm. "
+                "Cutting off around 2pm is the single easiest win for better sleep.",
+          );
+          return;
+
+        case 'exercise_sleep':
+          await _speak(
+            "Exercise is one of the best things you can do for sleep - "
+                "it deepens sleep and helps you fall asleep faster. "
+                "Timing matters though - "
+                "vigorous workouts within 2 hours of bed raise your heart rate "
+                "and make it harder to wind down. "
+                "Morning or early afternoon is the sweet spot.",
+          );
+          return;
+
+        case 'melatonin':
+          await _speak(
+            "Melatonin is a hormone your body already makes when it gets dark. "
+                "A small dose - around 0.5 to 1 milligram - an hour before bed can help, "
+                "especially for jet lag or shift work. "
+                "It works best paired with good sleep habits and a dark room - "
+                "and check with your doctor before starting any supplement.",
+          );
+          return;
+
+        case 'sleep_stages':
+          await _speak(
+            "Sleep cycles through stages roughly every 90 minutes - "
+                "light sleep is the drift-off phase - "
+                "deep sleep is when your body repairs itself and locks in memories - "
+                "and REM is when most dreaming happens, key for emotional regulation and learning. "
+                "Cutting sleep short hits mood and memory the hardest.",
+          );
+          return;
+
+        case 'circadian_rhythm':
+          await _speak(
+            "Your circadian rhythm is your body's internal clock - "
+                "driven mainly by light. "
+                "Morning sunlight is the strongest signal that resets it each day. "
+                "The fix for a disrupted clock is simple - "
+                "wake at the same time daily and get outside in the morning.",
+          );
+          return;
+
+        case 'insomnia':
+          await _speak(
+            "Insomnia is when sleep problems happen most nights for months on end. "
+                "The best treatment is CBT-I - cognitive behavioural therapy for insomnia - "
+                "it works better than sleeping pills with no side effects. "
+                "If this sounds like you, a GP or sleep specialist is worth seeing.",
+          );
+          return;
+
+        case 'stress_sleep':
+          await _speak(
+            "Stress and anxiety are among the biggest reasons people can't switch off at night. "
+                "A brain dump before bed - writing your worries down - "
+                "helps get them out of your head. "
+                "Slow breathing and a consistent wind-down routine "
+                "also calm the nervous system over time.",
+          );
+          return;
+
+        case 'sleep_schedule':
+          await _speak(
+            "Consistency is the biggest lever for sleep quality - "
+                "going to bed and waking at the same time every day, weekends included, "
+                "trains your circadian rhythm to feel sleepy on cue. "
+                "Even one late night can set you back for a few days.",
+          );
+          return;
+
+        case 'alcohol_sleep':
+          await _speak(
+            "Alcohol is a tricky one - "
+                "it helps you fall asleep faster but fragments sleep later in the night, "
+                "suppressing deep and REM sleep. "
+                "You might drift off easily but wake up feeling unrefreshed. "
+                "Even one or two drinks can affect sleep quality.",
+          );
+          return;
+
+        case 'morning_grogginess':
+          await _speak(
+            "Waking up groggy is often sleep inertia - "
+                "your body being pulled out of a deep sleep stage. "
+                "A consistent wake time helps your body time it better. "
+                "Natural light within 30 minutes of waking "
+                "and some light movement also speed up how quickly you feel alert.",
+          );
+          return;
+
+        case 'sleep_debt':
+          await _speak(
+            "Sleep debt is real - but you can't fully recover it in one weekend. "
+                "Sleeping in helps short-term but disrupts your schedule for the week ahead. "
+                "The better fix is gradually shifting your bedtime earlier by 15 minutes each night "
+                "until you're consistently getting 7 to 9 hours.",
+          );
+          return;
+
+        case 'dreams_nightmares':
+          await _speak(
+            "Dreams mostly happen during REM sleep - "
+                "they're linked to emotional processing and memory consolidation. "
+                "Vivid dreams or nightmares often spike with stress, alcohol, or disrupted sleep. "
+                "A consistent wind-down and reducing stress before bed usually helps.",
+          );
+          return;
+
+        case 'waking_night':
+          await _speak(
+            "Waking during the night is usually linked to light sleep cycles, "
+                "room temperature, or stress. "
+                "Keep your room around 18 degrees - "
+                "and if you wake up, skip the phone. "
+                "Slow breathing and progressive muscle relaxation "
+                "work better than scrolling.",
+          );
+          return;
+
+        case 'sleep_paralysis':
+          await _speak(
+            "Sleep paralysis is your brain waking up while your body is still in REM - "
+                "temporarily keeping muscles still. "
+                "Harmless, but can feel frightening. "
+                "Better sleep consistency and lower stress reduces how often it happens.",
+          );
+          return;
+
       }
     }
 
@@ -780,13 +1064,11 @@ class SleepController extends ChangeNotifier {
 
     if (text.contains('activit') || text.contains('something to do') ||
         text.contains('exercise') && text.contains('sleep') ||
-        text.contains('routine') && text.contains('start') ||
         text.contains('relax') && text.contains('now')) {
       _consecutiveFallbacks = 0;
       await _speak(
         "Happy to help you wind down. "
-            "Just say 'wind down' to start your bedtime routine, "
-            "or 'muscle relaxation' if you're feeling anxious or tense.",
+            "Just say 'start bedtime routine' to begin your wind-down session.",
       );
       return;
     }
@@ -927,21 +1209,6 @@ class SleepController extends ChangeNotifier {
       return;
     }
 
-    // 4f.5. Action-intent: starting/opening the bedtime routine session
-    if ((text.contains('start') || text.contains('begin') ||
-        text.contains('do my') || text.contains('open') ||
-        text.contains('launch') || text.contains('let\'s do') ||
-        text.contains('lets do') || text.contains('begin my')) &&
-        (text.contains('bedtime routine') ||
-            text.contains('wind down')        ||
-            text.contains('wind-down')        ||
-            text.contains('night routine')    ||
-            text.contains('sleep routine'))) {
-      _consecutiveFallbacks = 0;
-      await _speak("Starting your bedtime routine now.");
-      await _openWindDownScreen();
-      return;
-    }
 
     // 4f.8. Bedtime routine STRUCTURE (what should I do, step by step)
     if (text.contains('what should my bedtime routine') ||
@@ -996,13 +1263,10 @@ class SleepController extends ChangeNotifier {
         text.contains('breath exercise') ||
         text.contains('box breathing')) {
       _consecutiveFallbacks = 0;
-      final prefix = _contextPrefix();
-      final ack  = "Breathing techniques are one of the most effective tools for sleep onset.";
-      final core = "Try 4-7-8 breathing: inhale for 4 seconds, hold for 7, exhale slowly for 8. Repeat 3 or 4 times.";
-      final bridge = _join(core,
-          "it activates your parasympathetic nervous system — your body's built-in off switch.",
-          type: 'elaboration');
-      await _speak('$prefix$ack $bridge');
+      await _speak("Opening Breathing Exercises for you now.");
+      if (_context != null && _context!.mounted) {
+        await Navigator.push(_context!, MaterialPageRoute(builder: (_) => const BreathingExercisesPage()));
+      }
       return;
     }
 
@@ -1147,8 +1411,7 @@ class SleepController extends ChangeNotifier {
             _hasWord(text, 'sleepy')        ||
             _hasWord(text, 'drowsy')        ||
             _hasWord(text, 'exhausted')     ||
-            text.contains('need to sleep') ||
-            text.contains('ready for bed'))) {
+            text.contains('need to sleep'))) {
 
       _consecutiveFallbacks = 0;
       final prefix = _contextPrefix();
@@ -1329,7 +1592,7 @@ class SleepController extends ChangeNotifier {
     }
 
     // 7i. General tips / help / capability queries
-    if (text.contains('sleep tips')          || text.contains('help me sleep')      ||
+    if (text.contains('sleep tips')         ||
         text.contains('improve my sleep')    || text.contains('sleep better')        ||
         text.contains('how to sleep')        || text.contains('what can you')        ||
         text.contains('what you can')        || text.contains('what can i say')      ||
