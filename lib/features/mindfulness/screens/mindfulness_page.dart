@@ -20,13 +20,22 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     with TickerProviderStateMixin {
   late final MindfulnessController _ctrl;
   bool _micVisible = true;
+  bool _wasPlaying = false;
 
   @override
   void initState() {
     super.initState();
     _ctrl = MindfulnessController(vsync: this);
     _ctrl.addListener(() {
-      if (mounted) setState(() {});
+      if (mounted) {
+        if (_ctrl.isPlaying && !_wasPlaying) {
+          _micVisible = false;
+        } else if (!_ctrl.isPlaying && _wasPlaying) {
+          _micVisible = true;
+        }
+        _wasPlaying = _ctrl.isPlaying;
+        setState(() {});
+      }
     });
     _ctrl.init(initialSessionId: widget.initialSessionId);
   }
