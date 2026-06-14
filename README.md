@@ -15,7 +15,7 @@
 
 ## ✨ Overview
 
-MindMate is a Flutter-based **Voice User Interface (VUI)** application designed to provide accessible mental health and wellbeing support for young adults aged 18–30.
+MindMate is a Flutter-based **Voice User Interface (VUI)** application designed to provide accessible mental health and wellbeing support for young adults aged 18-30.
 
 The app enables users to interact through natural voice conversations and receive guidance on emotional wellbeing, mindfulness, relaxation, sleep improvement, and professional support resources.
 
