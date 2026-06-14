@@ -159,8 +159,7 @@ class HomeController extends ChangeNotifier {
         text.contains('present')) {
       intent = 'NAVIGATE_MINDFULNESS';
     } else if (text.contains('mood') ||
-        text.contains('feeling') ||
-        text.contains('emotion') ||
+        text.contains('tracking') ||
         text.contains('track')) {
       intent = 'NAVIGATE_MOOD';
     } else if (text.contains('emergency') ||
