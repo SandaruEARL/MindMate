@@ -582,7 +582,7 @@ class SleepController extends ChangeNotifier {
       if (_context != null && _context!.mounted) {
         Navigator.push(
           _context!,
-          MaterialPageRoute(builder: (_) => const EmergencySupportPage()),
+          MaterialPageRoute(builder: (_) => EmergencySupportPage(initialCallKey: callKey)),
         );
       }
       return;
@@ -986,58 +986,7 @@ class SleepController extends ChangeNotifier {
       await _speak('$ack $bridge');
       return;
     }
-
-
-    // ── 5. CROSS-MODULE MENTIONS — stay in scope ──────────────────────────────
-    // We don't navigate away. We answer the sleep-relevant part inline.
-
-    if (text.contains('breathing')       ||
-        text.contains('breathe')         ||
-        text.contains('breath exercise') ||
-        text.contains('box breathing')) {
-      _consecutiveFallbacks = 0;
-      final prefix = _contextPrefix();
-      final ack  = "Breathing techniques are one of the most effective tools for sleep onset.";
-      final core = "Try 4-7-8 breathing: inhale for 4 seconds, hold for 7, exhale slowly for 8. Repeat 3 or 4 times.";
-      final bridge = _join(core,
-          "it activates your parasympathetic nervous system — your body's built-in off switch.",
-          type: 'elaboration');
-      await _speak('$prefix$ack $bridge');
-      return;
-    }
-
-    if (text.contains('mindfulness')        ||
-        text.contains('meditation')         ||
-        text.contains('meditate')           ||
-        text.contains('body scan')          ||
-        text.contains('guided meditation')) {
-      _consecutiveFallbacks = 0;
-      final prefix = _contextPrefix();
-      final ack  = "A short mindfulness practice before bed is one of the best things for sleep.";
-      final core = "Try a body scan: lie down, close your eyes, and slowly move attention from your toes upward, releasing tension in each part.";
-      final bridge = _join(core,
-          "doing this nightly trains your nervous system to associate bed with relaxation.",
-          type: 'reason');
-      await _speak('$prefix$ack $bridge');
-      return;
-    }
-
-    if (text.contains('track my mood')      ||
-        text.contains('log my mood')         ||
-        text.contains('mood and sleep')      ||
-        text.contains('mood affect sleep')   ||
-        text.contains('sleep affect mood')   ||
-        text.contains('mood tracker')        ||
-        text.contains('how am i feeling')) {
-      _consecutiveFallbacks = 0;
-      await _speak(
-        "Mood and sleep are deeply linked. Poor sleep raises cortisol and lowers emotional resilience, "
-            "while stress and low mood make it harder to switch off at night. "
-            "If you notice you're struggling emotionally, a consistent bedtime routine helps stabilise both.",
-      );
-      return;
-    }
-
+    
     // ── 6. SYMPTOM / STATE intents ─────────────────────────────────────────
     // These use _hasWord() for short emotional keywords so that a bare word
     // like "tired" in "what is sleep" can never fire here if the question-form
