@@ -80,7 +80,7 @@ class MoodTrackingController extends ChangeNotifier {
     await tts.setVolume(1.0);
     await tts.setPitch(1.0);
     await Future.delayed(const Duration(milliseconds: 300));
-    await speak('Tap how you are feeling right now.');
+    await speak('Welcome back. How are you feeling today?');
   }
 
   Future<void> _initStt() async {
@@ -197,7 +197,7 @@ class MoodTrackingController extends ChangeNotifier {
     notifyListeners();
 
     if (spoken.isEmpty) {
-      await speak("I didn't catch that. Please try again.");
+      await speak("I didn't quite catch that. Could you say it again?");
       statusLabel = 'Tap the mic and speak';
     } else {
       await _handleVoiceCommand(spoken);
@@ -321,7 +321,7 @@ class MoodTrackingController extends ChangeNotifier {
         return;
       } else {
         await speak(
-          'I heard "$spoken" but please tap or say your mood: Great, Good, Okay, Sad, Struggling, or Angry.',
+          'I heard "$spoken". Could you tell me if you are feeling great, good, okay, sad, struggling, or angry?',
         );
         statusLabel = 'Tap the mic and speak';
         notifyListeners();
@@ -346,7 +346,7 @@ class MoodTrackingController extends ChangeNotifier {
       reply = matchedQA.answer;
     } else {
       reply =
-          'I did not understand that. Please try asking one of the questions shown above.';
+          'I did not understand that. Please try asking similar questions to the ones shown above.';
     }
 
     isBotThinking = false;
