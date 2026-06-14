@@ -168,27 +168,6 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
 
             const SizedBox(height: 20),
 
-            // ── Topic chips ────────────────────────────────────────────────────────────
-            SizedBox(
-              height: 40,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: _kTopics.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final t = _kTopics[i];
-                  return _TopicChip(
-                    topic:    t,
-                    disabled: isBusy,
-                    onTap: () => _controller.sendTextCommand(t.label, t.command),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
             // ── Activity buttons ───────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -215,28 +194,93 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
                   Positioned.fill(
                     child: _controller.chatHistory.isEmpty
                         ? _EmptyState(accentColor: _accent)
-                        : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
-                      itemCount: _controller.chatHistory.length + (isBusy ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == _controller.chatHistory.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16, left: 36),
-                            child: _ThinkingDots(color: _accent),
+                        : // Chat list fills full area
+                    Positioned.fill(
+                      child: _controller.chatHistory.isEmpty
+                          ? _EmptyState(accentColor: _accent)
+                          : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
+                        itemCount: _controller.chatHistory.length + (isBusy ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == _controller.chatHistory.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16, left: 36),
+                              child: _ThinkingDots(color: _accent),
+                            );
+                          }
+
+                          final isLast = index == _controller.chatHistory.length - 1;
+                          final message = _controller.chatHistory[index];
+
+                          // Show rating pills only attached to the last assistant bubble
+                          // and only while awaiting a quality rating
+                          final showRatingPills = isLast
+                              && !message.isUser
+                              && _controller.awaitingQualityRating;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _ChatBubble(
+                                key:         ValueKey(index),
+                                message:     message,
+                                accentColor: _accent,
+                                animate: isLast && !_animatedSet.contains(index),
+                                onAnimationDone: () {
+                                  if (mounted) setState(() => _animatedSet.add(index));
+                                },
+                              ),
+
+                              // ── Rating pills pinned directly under the question bubble ──
+                              if (showRatingPills)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 36, right: 0, bottom: 20),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: List.generate(5, (i) {
+                                      final rating = i + 1;
+                                      final colors = [
+                                        const Color(0xFFE8EAF6),
+                                        const Color(0xFFC5CAE9),
+                                        const Color(0xFF9FA8DA),
+                                        const Color(0xFF5C6BC0),
+                                        const Color(0xFF3F51B5),
+                                      ];
+                                      final textColor = i >= 2 ? Colors.white : _accent;
+
+                                      return GestureDetector(
+                                        onTap: () => _controller.sendRating(rating),
+                                        child: Container(
+                                          width:  40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: colors[i],
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: _accent.withValues(alpha: 0.25),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              '$rating',
+                                              style: TextStyle(
+                                                fontSize:   16,
+                                                fontWeight: FontWeight.bold,
+                                                color:      textColor,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                ),
+                            ],
                           );
-                        }
-                        return _ChatBubble(
-                          key:         ValueKey(index),
-                          message:     _controller.chatHistory[index],
-                          accentColor: _accent,
-                          animate: index == _controller.chatHistory.length - 1
-                              && !_animatedSet.contains(index),
-                          onAnimationDone: () {
-                            if (mounted) setState(() => _animatedSet.add(index));
-                          },
-                        );
-                      },
+                        },
+                      ),
                     ),
                   ),
 
