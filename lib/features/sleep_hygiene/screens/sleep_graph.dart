@@ -29,6 +29,7 @@ class _SleepGraphScreenState extends State<SleepGraphScreen> {
 
   List<SleepRecord> _records = [];
   bool              _loading = true;
+  bool _usingDummyData = false;
 
   @override
   void initState() {
@@ -38,10 +39,51 @@ class _SleepGraphScreenState extends State<SleepGraphScreen> {
 
   Future<void> _load() async {
     final data = await SleepRepository.loadLast(days: 14);
+    final rated = data.where((r) => r.quality != null).toList();
+
     setState(() {
-      _records = data;
+      if (rated.length >= 2) {
+        // Enough real data — use it purely
+        _records = data;
+        _usingDummyData = false;
+      } else {
+        // Not enough real data — pad with dummy
+        _records = _buildDummyRecords(realRecords: data);
+        _usingDummyData = true;
+      }
       _loading = false;
     });
+  }
+
+  List<SleepRecord> _buildDummyRecords({required List<SleepRecord> realRecords}) {
+    final now = DateTime.now();
+
+    // 14 days of plausible dummy scores
+    final dummyScores = [3, 2, 3, 4, 3, 4, 5, 3, 4, 4, 3, 5, 4, 3];
+
+    final dummyRecords = List.generate(14, (i) {
+      final date = now.subtract(Duration(days: 13 - i));
+      return SleepRecord(
+        id:       'dummy_$i',
+        date:     date,
+        quality:  dummyScores[i],
+        issue:    'quality',
+        bedtime:  '',
+        wakeTime: '',
+        tools:    [],
+      );
+    });
+
+    // Overlay any real records on top of matching dummy dates
+    for (final real in realRecords) {
+      final idx = dummyRecords.indexWhere((d) =>
+      d.date.year  == real.date.year &&
+          d.date.month == real.date.month &&
+          d.date.day   == real.date.day);
+      if (idx != -1) dummyRecords[idx] = real;
+    }
+
+    return dummyRecords;
   }
 
   // ── Derived data ───────────────────────────────────────────────────────────
@@ -93,8 +135,6 @@ class _SleepGraphScreenState extends State<SleepGraphScreen> {
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
-                  : _rated.length < 2
-                  ? _buildEmptyState()
                   : _buildContent(),
             ),
           ],
@@ -191,6 +231,36 @@ class _SleepGraphScreenState extends State<SleepGraphScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+
+          // ── Dummy data notice ─────────────────────────────
+          if (_usingDummyData)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFB300).withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.info_outline_rounded,
+                      size: 16, color: Color(0xFFFFB300)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Showing sample data. Rate your sleep for 2+ nights to see your real progress.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF795548),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           _buildStatCards(),
           const SizedBox(height: 16),
           _buildChartCard(),
