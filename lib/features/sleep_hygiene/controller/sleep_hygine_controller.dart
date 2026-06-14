@@ -250,6 +250,97 @@ class SleepController extends ChangeNotifier {
         text.startsWith('describe');
   }
 
+  // ── FAQ keyword-set matcher ─────────────────────────────────────────────
+  // Returns the matched FAQ id, or null if no FAQ matches confidently.
+  // Each FAQ has a set of keywords; if enough keywords are present
+  // (regardless of order/phrasing), it's considered a match.
+  String? _matchFaq(String text) {
+    // Normalize common variants so keyword lists don't need every form
+    final normalized = text
+        .replaceAll('asleep', 'sleep')
+        .replaceAll('drift off', 'sleep')
+        .replaceAll('doze off', 'sleep')
+        .replaceAll('nod off', 'sleep')
+        .replaceAll('pass out', 'sleep')
+        .replaceAll('knock out', 'sleep');
+
+    final faqs = <String, List<String>>{
+      'sleep_hygiene': [
+        'hygiene', 'sleep habit', 'healthy sleep', 'good sleep habit',
+        'sleep routine and environment', 'sleep hygiene', 'sleeping habits',
+        'good sleeping', 'clean sleep', 'sleep cleanliness', 'sleep practices',
+      ],
+      'fall_asleep_faster': [
+        'fall sleep faster', 'sleep faster', 'get to sleep faster',
+        'go to sleep faster', 'how to sleep faster', 'cant sleep fast',
+        "can't sleep fast", 'sleep quicker', 'sleep sooner',
+        'tips to sleep', 'ways to sleep', 'help me sleep faster',
+      ],
+      'bedtime_routine': [
+        'bedtime routine', 'night routine', 'wind down', 'wind-down',
+        'routine before bed', 'routine look like', 'prepare for bed',
+        'prepare for sleep', 'before bed routine', 'steps before bed',
+        'before i go to bed', 'before sleeping', 'getting ready for bed',
+        'pre bed', 'night time routine', 'evening routine', 'sleep ritual',
+        'things to do before bed', 'what to do before sleeping',
+      ],
+      'phone_before_bed': [
+        'phone', 'screen', 'blue light', 'mobile', 'device',
+        'scrolling', 'social media', 'tv', 'television', 'tablet', 'laptop',
+        'using my phone', 'on my phone', 'checking my phone', 'texting before bed',
+        'instagram before bed', 'youtube before bed', 'gaming before bed',
+        'browsing before bed', 'on social media',
+      ],
+      'sleep_duration': [
+        'how many hours', 'how much sleep', 'hours of sleep',
+        'how long sleep', 'sleep duration', 'enough sleep',
+        'hours do i need', 'hours should i sleep', 'right amount of sleep',
+        'normal amount of sleep', 'ideal sleep', 'recommended sleep',
+        'sleep requirement', 'optimal sleep', '8 hours enough',
+        '6 hours enough', 'is 5 hours enough',
+      ],
+    };
+
+    final hasSleepContext = normalized.contains('sleep') ||
+        normalized.contains('bed') || normalized.contains('night');
+
+    final mentionsGettingToSleep = normalized.contains('to sleep') ||
+        normalized.contains('fall sleep') || normalized.contains('get sleep');
+    final mentionsSpeed = normalized.contains('fast') || normalized.contains('quick') ||
+        normalized.contains('sooner') || normalized.contains('faster');
+
+    if (mentionsGettingToSleep && mentionsSpeed) {
+      return 'fall_asleep_faster';
+    }
+
+    String? best;
+    int bestScore = 0;
+
+    for (final entry in faqs.entries) {
+      final id = entry.key;
+      final keywords = entry.value;
+      int score = 0;
+
+      for (final kw in keywords) {
+        final matched = kw.contains(' ')
+            ? normalized.contains(kw)
+            : _hasWord(normalized, kw);
+        if (matched) score++;
+      }
+
+      if (id == 'phone_before_bed' && score > 0 && !hasSleepContext) {
+        score = 0;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = id;
+      }
+    }
+
+    return bestScore > 0 ? best : null;
+  }
+
   // ── Connector helper ────────────────────────────────────────────────────
   String _join(String a, String b, {String type = 'reason'}) {
     const connectors = {
@@ -472,7 +563,14 @@ class SleepController extends ChangeNotifier {
         text.contains('emergency')    ||
         text.contains('self harm')    ||
         text.contains('cutting')      ||
-        text.contains('harming')) {
+        text.contains('harming')      ||
+        text.contains("don't want to wake up") ||
+        text.contains("dont want to wake up")  ||
+        text.contains("don't want to be here") ||
+        text.contains("dont want to be here")  ||
+        text.contains('want to disappear')     ||
+        text.contains("can't go on")           ||
+        text.contains("cant go on")) {
       _consecutiveFallbacks = 0;
       statusLabel = 'Redirecting to Emergency Support…';
       notifyListeners();
@@ -486,6 +584,102 @@ class SleepController extends ChangeNotifier {
           _context!,
           MaterialPageRoute(builder: (_) => const EmergencySupportPage()),
         );
+      }
+      return;
+    }
+
+    // ── 0.5. FAQ keyword-set matching — catches any phrasing of the 5 core questions
+    final faqMatch = _matchFaq(text);
+    if (faqMatch != null) {
+      _consecutiveFallbacks = 0;
+      switch (faqMatch) {
+        case 'sleep_hygiene':
+          await _speak(
+            "Sleep hygiene is your habits, routine, and environment around sleep - "
+                "things like screen time, your wind-down routine, and keeping your room cool and dark.",
+          );
+          return;
+        case 'fall_asleep_faster':
+          if (text.startsWith('what is') || text.startsWith('what are') ||
+              text.startsWith('define')   || text.startsWith('explain')) {
+            await _speak(
+              "Falling asleep faster is about calming your body and mind so they're "
+                  "ready to switch off - mainly through breathing, reducing stimulation, "
+                  "and a consistent wind-down.",
+            );
+          } else {
+            final prefix = _contextPrefix();
+            await _speak(
+              '${prefix}Try 4-7-8 breathing: in for 4, hold for 7, out for 8. '
+                  'Cutting screens 30 minutes before bed and a bit of light stretching also help.',
+            );
+          }
+          return;
+        case 'bedtime_routine':
+          if (text.startsWith('what is') || text.startsWith('what are') ||
+              text.startsWith('define')   || text.startsWith('explain') ||
+              (text.contains('what') && text.contains('mean'))) {
+            await _speak(
+              "A bedtime routine is a set of calming activities you do each night "
+                  "to help your body and mind wind down before sleep.",
+            );
+          } else {
+            await _speak(
+              "Dim the lights an hour before bed, stop screens about 30 minutes before, "
+                  "then read or stretch to wind down.",
+            );
+          }
+          return;
+        case 'phone_before_bed':
+          if (text.startsWith('what is') || text.startsWith('what are') ||
+              text.startsWith('define')   || text.startsWith('explain')) {
+            await _speak(
+              "Using your phone before bed exposes you to blue light, which suppresses "
+                  "melatonin and makes it harder for your body to feel sleepy.",
+            );
+          } else {
+            await _speak(
+              "Yes - blue light from screens blocks melatonin, the hormone that makes you sleepy. "
+                  "Try going screen-free for the last 30 minutes before bed.",
+            );
+          }
+          return;
+        case 'sleep_duration':
+          await _speak("For adults aged 18 to 30, 7 to 9 hours a night is the recommended range.");
+          return;
+      }
+    }
+
+    // ── 0.7. Explicit module navigation — only on clear "open/start X" intent
+    if ((text.contains('open') || text.contains('start') || text.contains('go to') ||
+        text.contains('take me') || text.contains('switch to')) &&
+        (text.contains('breathing') || text.contains('breath exercise'))) {
+      _consecutiveFallbacks = 0;
+      await _speak('Opening Breathing Exercises.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const BreathingExercisesPage()));
+      }
+      return;
+    }
+
+    if ((text.contains('open') || text.contains('start') || text.contains('go to') ||
+        text.contains('take me') || text.contains('switch to')) &&
+        (text.contains('mindfulness') || text.contains('meditation'))) {
+      _consecutiveFallbacks = 0;
+      await _speak('Opening Mindfulness.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const MindfulnessPage()));
+      }
+      return;
+    }
+
+    if ((text.contains('open') || text.contains('start') || text.contains('go to') ||
+        text.contains('take me') || text.contains('switch to')) &&
+        (text.contains('mood'))) {
+      _consecutiveFallbacks = 0;
+      await _speak('Opening Mood Tracking.');
+      if (_context != null && _context!.mounted) {
+        Navigator.push(_context!, MaterialPageRoute(builder: (_) => const MoodTrackingPage()));
       }
       return;
     }
@@ -937,9 +1131,11 @@ class SleepController extends ChangeNotifier {
       final prefix = _contextPrefix();
       await _speak(
         '${prefix}Anxiety is one of the biggest reasons people can\'t switch off at night. '
-            'Opening a muscle relaxation session for you now.',
+            'Opening Mindfulness for you now.',
       );
-      await _openPmrScreen();
+      if (_context != null && _context!.mounted) {
+        await Navigator.push(_context!, MaterialPageRoute(builder: (_) => const MindfulnessPage()));
+      }
       return;
     }
 
