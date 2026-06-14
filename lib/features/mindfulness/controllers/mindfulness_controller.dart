@@ -30,6 +30,15 @@ class MindfulnessController extends ChangeNotifier {
 
   late final AnimationController progressController;
   final List<Timer> _guidanceTimers = [];
+  final List<Timer> _resumeTimers = [];
+
+  // ── Pause / Resume state ──────────────────────────────────────────────────
+  bool isPaused = false;
+  Duration _pausedElapsed = Duration.zero;
+  Duration _sessionDuration = const Duration(minutes: 5);
+  List<Map<String, dynamic>> _sessionCues = [];
+  bool _sessionPlayMusic = false;
+  String _sessionTitle = '';
 
   // ── Exposed state ────────────────────────────────────────────────────────
   bool isPlaying = false;
@@ -57,7 +66,7 @@ class MindfulnessController extends ChangeNotifier {
 
   final List<MindfulnessMessage> chatHistory = [
     MindfulnessMessage(
-      "Hello! I am your Mindfulness VUI guide. Tap the microphone to talk to me, or choose a session below.",
+      'Tap the microphone to talk to me, or choose a session below.',
       isUser: false,
     ),
   ];
@@ -152,19 +161,33 @@ class MindfulnessController extends ChangeNotifier {
   // ── TTS helpers ───────────────────────────────────────────────────────────
 
   Future<void> _restoreNormalTtsSettings() async {
-    await tts.setSpeechRate(0.55); // Increased for faster reading
-    await tts.setPitch(0.85); // Decreased for a calmer, more soothing tone
+    await tts.setSpeechRate(0.45); // Set to a normal, natural conversational speed
+    await tts.setPitch(0.9); // Slightly naturalized pitch
     await tts.setVolume(1.0);
   }
 
   // ── STT / Mic ─────────────────────────────────────────────────────────────
 
   Future<void> onMicTap() async {
-    if (isPlaying) {
-      await stopSession();
+    // If mic is already open, always stop it first (regardless of session state)
+    if (isListening) {
+      await stopListening();
       return;
     }
-    isListening ? await stopListening() : await startListening();
+    if (isPlaying) {
+      // Pause the session then start listening for a voice command
+      await pauseSession();
+      await Future.delayed(const Duration(milliseconds: 400));
+      await startListening();
+      return;
+    }
+    if (isPaused) {
+      // Session is paused – tap mic to speak a command
+      await startListening();
+      return;
+    }
+    // Normal idle state
+    await startListening();
   }
 
   Future<void> startListening() async {
@@ -182,6 +205,7 @@ class MindfulnessController extends ChangeNotifier {
     statusLabel = 'Listening…';
     notifyListeners();
 
+    await sttEngine.cancel(); // Clear any broken or hanging STT states
     await sttEngine.listen(
       onResult: (r) {
         recognizedText = r.recognizedWords;
@@ -230,12 +254,14 @@ class MindfulnessController extends ChangeNotifier {
     statusLabel = 'Speaking answer…';
     notifyListeners();
     await tts.stop(); // Stop any overlapping/queued speech before speaking
+    await _restoreNormalTtsSettings(); // Ensure speech rate and pitch are normal for conversational responses
     await tts.speak(response);
 
     // If the controller is expecting an answer, automatically turn the microphone back on!
     // But ONLY if the user hasn't already manually turned it on by interrupting us!
     if (!isListening) {
       if (currentState != 'idle' && _context != null && _context!.mounted) {
+        await Future.delayed(const Duration(milliseconds: 1000)); // Delay to allow TTS to release audio focus
         await startListening();
       } else {
         statusLabel = 'Press microphone to talk';
@@ -251,6 +277,29 @@ class MindfulnessController extends ChangeNotifier {
       statusLabel = "I didn't catch that. Try again.";
       notifyListeners();
       await tts.speak("I didn't catch that. Please try again.");
+      return;
+    }
+
+    // 0. In-session voice commands (highest priority when paused mid-session)
+    if (isPaused) {
+      if (text.contains('stop') || text.contains('close') || text.contains('end') || text.contains('exit') || text.contains('quit')) {
+        await stopSessionAndGoBack();
+        return;
+      }
+      if (text.contains('continue') || text.contains('resume') || text.contains('carry on') || text.contains('go on') || text.contains('keep going') || text.contains('start again') || text.contains('play')) {
+        statusLabel = 'Resuming session…';
+        notifyListeners();
+        await tts.speak('Resuming your session now.');
+        await resumeSession();
+        return;
+      }
+      if (text.contains('pause')) {
+        // Already paused – just confirm
+        await tts.speak('Session is already paused. Say continue to resume or stop to end.');
+        return;
+      }
+      // Unrecognised command while paused – prompt user
+      await tts.speak('Session is paused. Say continue to resume, or stop to close the meditation.');
       return;
     }
 
@@ -347,14 +396,7 @@ class MindfulnessController extends ChangeNotifier {
       );
       return;
     }
-    if (text.contains('what is body scan') || text.contains('explain body scan') || text.contains('how does body scan help')) {
-      await speakConversationalResponse(
-        'A body scan is a mindfulness practice where you mentally scan your body from head to toe, paying attention to physical sensations. '
-        'It helps you reconnect with your body and release stored physical tension. '
-        'Would you like to start the Body Scan session now, or ask another question?',
-      );
-      return;
-    }
+
     if (text.contains('what is loving kindness') || text.contains('explain loving kindness') || text.contains('compassion meditation')) {
       await speakConversationalResponse(
         'Loving Kindness meditation involves sending wishes of safety, happiness, and peace to yourself, your loved ones, and eventually all living beings. '
@@ -374,15 +416,15 @@ class MindfulnessController extends ChangeNotifier {
     if (text.contains('what is anxiety') || text.contains('how to manage anxiety') || text.contains('help with anxiety')) {
       await speakConversationalResponse(
         'Anxiety is a natural response to stress, but it can feel overwhelming. '
-        'You can manage it by taking slow, deep breaths, grounding yourself in the present, or doing our Anxiety Reduction meditation. '
-        'Would you like me to start the Anxiety Reduction meditation for you now?',
+        'You can manage it by taking slow, deep breaths, grounding yourself in the present, or doing our Beginner Meditation. '
+        'Would you like me to start the Beginner Meditation for you now?',
       );
       return;
     }
     if (text.contains('what is stress') || text.contains('how to manage stress') || text.contains('help with stress')) {
       await speakConversationalResponse(
         'Stress is how your body responds to daily challenges and pressures. '
-        'You can manage it by setting boundaries, taking deep breaths, and using a Body Scan or breathing exercises to relax your muscles. '
+        'You can manage it by setting boundaries, taking deep breaths, and using a Mindful Observation session or breathing exercises to relax your muscles. '
         'Would you like to try a meditation session now, or ask something else?',
       );
       return;
@@ -398,7 +440,7 @@ class MindfulnessController extends ChangeNotifier {
     }
     if (text.contains('what can i say') || text.contains('features') || text.contains('how does this work') || text.contains('help')) {
       await speakConversationalResponse(
-        'You can say, "Start Body Scan", "Start Anxiety Reduction", "Start Loving Kindness", "Start Focus", "Start Gratitude", or "Start Beginner Meditation". '
+        'You can say, "Start Loving Kindness", "Start Focus", "Start Gratitude", "Start Mindful Observation", or "Start Beginner Meditation". '
         'You can also ask questions like, "What is mindfulness?", "How do I manage anxiety?", or say "Go back". '
         'What would you like to do now?',
       );
@@ -477,13 +519,13 @@ class MindfulnessController extends ChangeNotifier {
       if (detectedSession != null) {
         recommendedSession = detectedSession;
         await _startRecommendedSession();
-      } else if (text.contains('body') || text.contains('scan') || text.contains('one') || text.contains('first')) {
-        chatHistory.add(MindfulnessMessage('Starting Body Scan…', isUser: false));
+      } else if (text.contains('one') || text.contains('first')) {
+        chatHistory.add(MindfulnessMessage('Starting Beginner Meditation…', isUser: false));
         notifyListeners();
-        await runBodyScan();
+        await runBeginnerMeditation();
       } else {
         await speakConversationalResponse(
-          'I did not catch which session you want. You can say Body Scan, Loving Kindness, Anxiety Reduction, Focus, Gratitude, Mindful Observation, or Beginner Meditation.',
+          'I did not catch which session you want. You can say Loving Kindness, Focus, Gratitude, Mindful Observation, or Beginner Meditation.',
         );
       }
       return;
@@ -498,11 +540,11 @@ class MindfulnessController extends ChangeNotifier {
         text.contains('worry') || text.contains('worried')) {
       detectedEmotion = 'anxiety';
       currentState = 'awaiting_session_confirmation';
-      recommendedSession = 'anxiety_reduction';
+      recommendedSession = 'beginner';
       notifyListeners();
       await speakConversationalResponse(
         'I hear that you are feeling anxious. '
-        'The Anxiety Reduction guided meditation is designed to calm your nervous system step by step through slow breathing and release exercises. '
+        'Beginner Meditation is a great way to calm your nervous system step by step through slow breathing and release exercises. '
         'Would you like me to start it for you?',
       );
       return;
@@ -514,11 +556,11 @@ class MindfulnessController extends ChangeNotifier {
         text.contains('overwhelm') || text.contains('burnout') || text.contains('burnt out')) {
       detectedEmotion = 'stress';
       currentState = 'awaiting_session_confirmation';
-      recommendedSession = 'body_scan';
+      recommendedSession = 'mindful_observation';
       notifyListeners();
       await speakConversationalResponse(
         'I hear that you are carrying a lot right now. '
-        'The Body Scan is the most effective way to release stress stored in your body — it guides you through each part to let go of tension. '
+        'Mindful Observation is a gentle way to release stress and ground yourself in the present moment, letting go of tension. '
         'Would you like me to start it for you?',
       );
       return;
@@ -578,11 +620,11 @@ class MindfulnessController extends ChangeNotifier {
         text.contains('furious') || text.contains('rage')) {
       detectedEmotion = 'anger';
       currentState = 'awaiting_session_confirmation';
-      recommendedSession = 'body_scan';
+      recommendedSession = 'mindful_observation';
       notifyListeners();
       await speakConversationalResponse(
         'I understand you are feeling frustrated. '
-        'A Body Scan can help by grounding you in your body and releasing the physical tension that comes with intense emotions. '
+        'Mindful Observation can help by grounding you in the present and releasing the physical tension that comes with intense emotions. '
         'Would you like me to start it for you?',
       );
       return;
@@ -604,10 +646,12 @@ class MindfulnessController extends ChangeNotifier {
       return;
     }
 
-    // 8d. Low self-esteem / Self-criticism
+    // 8d. Low self-esteem / Self-criticism / Loneliness
     if (text.contains('hate myself') || text.contains('worthless') || text.contains('not good enough') ||
         text.contains('failure') || text.contains('i failed') || text.contains('self doubt') ||
-        text.contains('low confidence') || text.contains('insecure')) {
+        text.contains('low confidence') || text.contains('insecure') || text.contains('lonely') ||
+        text.contains('alone') || text.contains('love my self') || text.contains('love myself') ||
+        text.contains('need some love')) {
       detectedEmotion = 'sad';
       currentState = 'awaiting_session_confirmation';
       recommendedSession = 'loving_kindness';
@@ -675,27 +719,27 @@ class MindfulnessController extends ChangeNotifier {
       statusLabel = 'Processing locally…';
       notifyListeners();
       
-      if (text.contains('mindfulness') || text.contains('meditation')) {
-        currentState = 'awaiting_session_confirmation';
-        recommendedSession = 'beginner';
+      if (text.contains('mindfulness') || text.contains('meditation') || text.contains('meditate')) {
+        currentState = 'awaiting_meditation_choice';
         notifyListeners();
         await speakConversationalResponse(
           'Mindfulness and meditation can help calm your nervous system. '
-          'We have sessions like Beginner Meditation, Focus, or Loving Kindness. '
-          'Would you like me to start the Beginner Meditation for you?',
+          'We have sessions like Beginner Meditation, Focus, Loving Kindness, Gratitude, and Mindful Observation. '
+          'Which session would you like to start?',
         );
+        return;
       } else if (text.contains('anxiety')) {
-        await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Anxiety Reduction meditation?');
+        await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Beginner Meditation?');
       } else if (text.contains('stress')) {
         await speakConversationalResponse('Stress is how your body responds to pressures. You can manage it by taking deep breaths. Would you like to try a meditation?');
       } else {
         chatHistory.add(const MindfulnessMessage(
-          "I am sorry, I didn't catch that. Try saying 'Start Body Scan' or ask me about mindfulness.",
+          "I am sorry, I didn't catch that. Try saying 'Start Loving Kindness' or ask me about mindfulness.",
           isUser: false,
         ));
         statusLabel = 'Waiting for input';
         notifyListeners();
-        await tts.speak("I am sorry, I didn't catch that. Try saying 'Start Body Scan' or ask me about mindfulness.");
+        await tts.speak("I am sorry, I didn't catch that. Try saying 'Start Loving Kindness' or ask me about mindfulness.");
       }
     }
   }
@@ -794,6 +838,15 @@ class MindfulnessController extends ChangeNotifier {
   }) async {
     if (isPlaying) return;
     _clearGuidanceTimers();
+    _clearResumeTimers();
+
+    // Save for potential pause/resume
+    _sessionTitle = title;
+    _sessionDuration = duration;
+    _sessionCues = cues;
+    _sessionPlayMusic = playMusic;
+    _pausedElapsed = Duration.zero;
+    isPaused = false;
 
     isPlaying = true;
     sessionLabel = '$title in progress…';
@@ -813,10 +866,10 @@ class MindfulnessController extends ChangeNotifier {
       }
     }
 
-    // Calm, slow speech settings for meditation guidance
-    await tts.setSpeechRate(0.20);
-    await tts.setPitch(0.85);
-    await tts.setVolume(0.65);
+    // Normal speech settings for meditation guidance (matching mood tracking voice style)
+    await tts.setSpeechRate(0.45);
+    await tts.setPitch(1.0);
+    await tts.setVolume(1.0);
 
     for (final cue in cues) {
       final offset = cue['offset'] as Duration;
@@ -833,22 +886,92 @@ class MindfulnessController extends ChangeNotifier {
     }
   }
 
+  // ── Pause ─────────────────────────────────────────────────────────────────
+
+  Future<void> pauseSession() async {
+    if (!isPlaying) return;
+    _clearGuidanceTimers();
+    _clearResumeTimers();
+    await tts.stop();
+    await audioPlayer.pause();
+    progressController.stop();
+    _pausedElapsed = _sessionDuration * progressController.value;
+    isPlaying = false;
+    isPaused = true;
+    sessionLabel = 'Session paused. Say "continue" to resume or "stop" to end.';
+    statusLabel = 'Listening…';
+    notifyListeners();
+  }
+
+  // ── Resume ────────────────────────────────────────────────────────────────
+
+  Future<void> resumeSession() async {
+    if (!isPaused) return;
+    isPaused = false;
+    isPlaying = true;
+    sessionLabel = '$_sessionTitle in progress…';
+    activeTab = 'chat';
+    notifyListeners();
+
+    await audioPlayer.resume();
+
+    // Meditation TTS settings (matching mood tracking voice style)
+    await tts.setSpeechRate(0.45);
+    await tts.setPitch(1.0);
+    await tts.setVolume(1.0);
+
+    // Restart progress from where we left off
+    final remainingDuration = _sessionDuration - _pausedElapsed;
+    progressController.duration = remainingDuration;
+    progressController.forward();
+
+    // Re-schedule only the cues that haven't fired yet
+    for (final cue in _sessionCues) {
+      final cueOffset = cue['offset'] as Duration;
+      if (cueOffset <= _pausedElapsed) continue; // already played
+      final delay = cueOffset - _pausedElapsed;
+      final t = Timer(delay, () async {
+        if (isPlaying) await tts.speak(cue['text'] as String);
+      });
+      _resumeTimers.add(t);
+    }
+  }
+
+  // ── Stop (full) ───────────────────────────────────────────────────────────
+
   Future<void> stopSession() async {
     _clearGuidanceTimers();
+    _clearResumeTimers();
     await tts.stop();
     await _restoreNormalTtsSettings();
     await audioPlayer.stop();
     progressController.stop();
     progressController.reset();
     isPlaying = false;
+    isPaused = false;
+    _pausedElapsed = Duration.zero;
     sessionLabel = 'Session stopped.';
     currentState = 'idle';
     notifyListeners();
   }
 
+  /// Stop the session and return to the main Mindfulness & Meditation page view.
+  /// Stays on this page — does NOT navigate away.
+  Future<void> stopSessionAndGoBack() async {
+    await tts.stop();
+    await stopSession();
+    // Reset to the main page view (chat tab with Mindfulness / Guided buttons)
+    activeTab = 'chat';
+    sessionLabel = 'Tap a session to begin';
+    notifyListeners();
+    await tts.speak('Meditation closed. You can choose another session whenever you are ready.');
+  }
+
   Future<void> _onSessionComplete() async {
     _clearGuidanceTimers();
+    _clearResumeTimers();
     isPlaying = false;
+    isPaused = false;
     sessionLabel = 'Session complete. How do you feel now?';
     chatHistory.add(MindfulnessMessage('Session complete. Well done.', isUser: false));
     notifyListeners();
@@ -867,11 +990,19 @@ class MindfulnessController extends ChangeNotifier {
     _guidanceTimers.clear();
   }
 
+  void _clearResumeTimers() {
+    for (final t in _resumeTimers) {
+      t.cancel();
+    }
+    _resumeTimers.clear();
+  }
+
   // ── Dispose ───────────────────────────────────────────────────────────────
 
   @override
   void dispose() {
     _clearGuidanceTimers();
+    _clearResumeTimers();
     tts.stop();
     sttEngine.stop();
     audioPlayer.stop();
@@ -880,6 +1011,7 @@ class MindfulnessController extends ChangeNotifier {
     super.dispose();
   }
 }
+
 
 // ── Simple message model ──────────────────────────────────────────────────────
 

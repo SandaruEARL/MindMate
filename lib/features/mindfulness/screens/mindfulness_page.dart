@@ -19,13 +19,29 @@ class MindfulnessPage extends StatefulWidget {
 class _MindfulnessPageState extends State<MindfulnessPage>
     with TickerProviderStateMixin {
   late final MindfulnessController _ctrl;
+  bool _wasPlaying = false;
+  bool _micVisible = true; // Hidden during session, revealed on screen tap
 
   @override
   void initState() {
     super.initState();
     _ctrl = MindfulnessController(vsync: this);
     _ctrl.addListener(() {
-      if (mounted) setState(() {});
+      if (mounted) {
+        if (_ctrl.isPlaying && !_wasPlaying) {
+          // Session just started — hide mic
+          _micVisible = false;
+        } else if (!_ctrl.isPlaying && _wasPlaying) {
+          // Session just stopped — show mic again
+          _micVisible = true;
+        }
+        // When paused, automatically reveal mic so user knows to tap
+        if (_ctrl.isPaused) {
+          _micVisible = true;
+        }
+        _wasPlaying = _ctrl.isPlaying;
+        setState(() {});
+      }
     });
     _ctrl.init(initialSessionId: widget.initialSessionId);
   }
@@ -41,6 +57,7 @@ class _MindfulnessPageState extends State<MindfulnessPage>
     _ctrl.dispose();
     super.dispose();
   }
+  
 
   // ── Tab-toggle pill button ─────────────────────────────────────────────────
 
@@ -129,149 +146,162 @@ class _MindfulnessPageState extends State<MindfulnessPage>
               bottom: false,
               child: GestureDetector(
                 onTap: () {
-                  if (!_ctrl.isPlaying && _ctrl.activeTab != 'chat') {
+                  if (_ctrl.isPlaying) {
+                    // Reveal the mic button so user can tap it
+                    setState(() => _micVisible = true);
+                  } else if (!_ctrl.isPaused && _ctrl.activeTab != 'chat') {
                     _ctrl.setActiveTab('chat');
                   }
                 },
                 behavior: HitTestBehavior.translucent,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 280),
+                  padding: const EdgeInsets.only(top: 8, bottom: 280),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ── Progress indicator + tab toggles ─────────────────
-                      Center(
-                        child: Column(
-                          children: [
-                            AnimatedBuilder(
-                              animation: _ctrl.progressController,
-                              builder: (_, __) => GestureDetector(
-                                onTap: () {
-                                  if (_ctrl.isPlaying) {
-                                    _ctrl.stopSession();
-                                  } else if (_ctrl.activeTab != 'chat') {
-                                    _ctrl.setActiveTab('chat');
-                                  }
-                                },
-                                child: Tooltip(
-                                  message: _ctrl.isPlaying
-                                      ? 'Tap to stop session'
-                                      : '',
-                                  child: MindfulProgressIndicator(
-                                    progress: _ctrl.progressController.value,
-                                    isPlaying: _ctrl.isPlaying,
-                                    accentColor: accent,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              AnimatedBuilder(
+                                animation: _ctrl.progressController,
+                                builder: (_, __) => GestureDetector(
+                                  onTap: () {
+                                    if (_ctrl.isPlaying) {
+                                      _ctrl.stopSession();
+                                    } else if (_ctrl.activeTab != 'chat') {
+                                      _ctrl.setActiveTab('chat');
+                                    }
+                                  },
+                                  child: Tooltip(
+                                    message: _ctrl.isPlaying
+                                        ? 'Tap to stop session'
+                                        : '',
+                                    child: MindfulProgressIndicator(
+                                      progress: _ctrl.progressController.value,
+                                      isPlaying: _ctrl.isPlaying,
+                                      accentColor: accent,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                            // Tab toggles (only when not playing)
-                            if (!_ctrl.isPlaying)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _tabButton(
-                                    id: 'mindfulness',
-                                    label: 'Mindfulness',
-                                    icon: Icons.self_improvement_rounded,
-                                    accent: accent,
-                                    cs: cs,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _tabButton(
-                                    id: 'guided',
-                                    label: 'Guided Meditation',
-                                    icon: Icons.spa_rounded,
-                                    accent: accent,
-                                    cs: cs,
-                                  ),
-                                ],
-                              )
-                            else ...[
-                              // Active session info card
-                              Builder(builder: (_) {
-                                final data = _currentSessionData();
-                                if (data == null) return const SizedBox.shrink();
-                                return ActiveSessionCard(
-                                  session: data,
-                                  progressController: _ctrl.progressController,
-                                );
-                              }),
+                              // Tab toggles (only when not playing/paused)
+                              if (!_ctrl.isPlaying && !_ctrl.isPaused)
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _tabButton(
+                                      id: 'mindfulness',
+                                      label: 'Mindfulness',
+                                      icon: Icons.self_improvement_rounded,
+                                      accent: accent,
+                                      cs: cs,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    _tabButton(
+                                      id: 'guided',
+                                      label: 'Guided Meditation',
+                                      icon: Icons.spa_rounded,
+                                      accent: accent,
+                                      cs: cs,
+                                    ),
+                                  ],
+                                )
+                              else if (_ctrl.isPlaying || _ctrl.isPaused) ...[
+                                // Active session info card
+                                Builder(builder: (_) {
+                                  final data = _currentSessionData();
+                                  if (data == null) return const SizedBox.shrink();
+                                  return ActiveSessionCard(
+                                    session: data,
+                                    progressController: _ctrl.progressController,
+                                    isPaused: _ctrl.isPaused,
+                                  );
+                                }),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
 
-                      // ── Chat log (default view + while playing) ──────────
-                      if (_ctrl.activeTab == 'chat' || _ctrl.isPlaying)
+                      // ── Chat log (default view + while playing/paused) ──────────
+                      if (_ctrl.activeTab == 'chat' || _ctrl.isPlaying || _ctrl.isPaused)
                         MindfulnessChatLog(chatHistory: _ctrl.chatHistory)
                             .animate().fade(duration: 300.ms).slideY(begin: 0.05),
 
                       // ── Mindfulness sessions list ─────────────────────────
                       if (!_ctrl.isPlaying && _ctrl.activeTab == 'mindfulness') ...[
                         const SizedBox(height: 16),
-                        Text(
-                          'Mindfulness Sessions',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: cs.onSurface,
-                          ),
-                        ).animate().fade().slideY(begin: 0.2),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            'Mindfulness Sessions',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurface,
+                            ),
+                          ).animate().fade().slideY(begin: 0.2),
+                        ),
                         const SizedBox(height: 12),
                         ...kMindfulnessSessions.map((s) =>
-                            MindfulnessSessionCard(
-                              session: s,
-                              onTap: () {
-                                switch (s['title']) {
-                                  case 'Body Scan':
-                                    _ctrl.runBodyScan();
-                                    break;
-                                  case 'Mindful Observation':
-                                    _ctrl.runMindfulObservation();
-                                    break;
-                                  case 'Loving Kindness':
-                                    _ctrl.runLovingKindness();
-                                    break;
-                                }
-                              },
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              child: MindfulnessSessionCard(
+                                session: s,
+                                onTap: () {
+                                  switch (s['title']) {
+                                    case 'Mindful Observation':
+                                      _ctrl.runMindfulObservation();
+                                      break;
+                                    case 'Loving Kindness':
+                                      _ctrl.runLovingKindness();
+                                      break;
+                                  }
+                                },
+                              ),
                             )).toList().animate(interval: 50.ms).fade(duration: 300.ms, curve: Curves.easeOutQuad).slideY(begin: 0.1, curve: Curves.easeOutQuad),
                       ],
 
                       // ── Guided meditation list ────────────────────────────
                       if (!_ctrl.isPlaying && _ctrl.activeTab == 'guided') ...[
                         const SizedBox(height: 16),
-                        Text(
-                          'Guided Meditation Sessions 🎧',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: cs.onSurface,
-                          ),
-                        ).animate().fade().slideY(begin: 0.2),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            'Guided Meditation Sessions 🎧',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurface,
+                            ),
+                          ).animate().fade().slideY(begin: 0.2),
+                        ),
                         const SizedBox(height: 12),
                         ...kGuidedMeditationSessions.map((s) =>
-                            MindfulnessSessionCard(
-                              session: s,
-                              onTap: () {
-                                switch (s['title']) {
-                                  case 'Beginner Meditation':
-                                    _ctrl.runBeginnerMeditation();
-                                    break;
-                                  case 'Anxiety Reduction':
-                                    _ctrl.runAnxietyReduction();
-                                    break;
-                                  case 'Focus & Concentration':
-                                    _ctrl.runFocusConcentration();
-                                    break;
-                                  case 'Gratitude Meditation':
-                                    _ctrl.runGratitudeMeditation();
-                                    break;
-                                }
-                              },
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              child: MindfulnessSessionCard(
+                                session: s,
+                                onTap: () {
+                                  switch (s['title']) {
+                                    case 'Beginner Meditation':
+                                      _ctrl.runBeginnerMeditation();
+                                      break;
+                                    case 'Focus & Concentration':
+                                      _ctrl.runFocusConcentration();
+                                      break;
+                                    case 'Gratitude Meditation':
+                                      _ctrl.runGratitudeMeditation();
+                                      break;
+                                  }
+                                },
+                              ),
                             )).toList().animate(interval: 50.ms).fade(duration: 300.ms, curve: Curves.easeOutQuad).slideY(begin: 0.1, curve: Curves.easeOutQuad),
                       ],
                     ],
@@ -281,17 +311,30 @@ class _MindfulnessPageState extends State<MindfulnessPage>
             ),
           ),
 
-          // ── Floating mic button (pinned at bottom) ───────────────────────
+          // ── Floating mic button (hidden during session, tap screen to reveal) ──
           Align(
             alignment: Alignment.bottomCenter,
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-                child: VoiceMicButton(
-                  isListening: _ctrl.isListening,
-                  onTap: _ctrl.onMicTap,
-                  statusLabel: _ctrl.statusLabel,
-                  recognizedText: _ctrl.recognizedText,
+                child: AnimatedSlide(
+                  offset: _micVisible ? Offset.zero : const Offset(0, 2.0),
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedOpacity(
+                    opacity: _micVisible ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: VoiceMicButton(
+                      isListening: _ctrl.isListening,
+                      onTap: _ctrl.onMicTap,
+                      statusLabel: _ctrl.isPlaying
+                          ? 'Tap mic to pause'
+                          : _ctrl.isPaused
+                              ? 'Say "continue" or "stop"'
+                              : _ctrl.statusLabel,
+                      recognizedText: _ctrl.recognizedText,
+                    ),
+                  ),
                 ),
               ),
             ),

@@ -75,56 +75,95 @@ class MindfulnessSessionCard extends StatelessWidget {
   }
 }
 
-/// Card displayed while a session is actively playing, showing
+/// Card displayed while a session is actively playing or paused, showing
 /// the session icon, title, subtitle, and live countdown timer.
 class ActiveSessionCard extends StatelessWidget {
   final Map<String, dynamic> session;
   final AnimationController progressController;
+  final bool isPaused;
 
   const ActiveSessionCard({
     super.key,
     required this.session,
     required this.progressController,
+    this.isPaused = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final color = session['color'] as Color;
+    final pauseColor = const Color(0xFFFF9800); // amber for paused state
 
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
+            color: (isPaused ? pauseColor : color).withOpacity(0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color, width: 2),
+            border: Border.all(
+              color: isPaused ? pauseColor : color,
+              width: 2,
+            ),
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundColor: color.withOpacity(0.15),
-                child: Icon(session['icon'] as IconData, color: color),
+              Stack(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: (isPaused ? pauseColor : color).withOpacity(0.15),
+                    child: Icon(
+                      isPaused ? Icons.pause_rounded : session['icon'] as IconData,
+                      color: isPaused ? pauseColor : color,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      session['title'] as String,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          session['title'] as String,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        if (isPaused) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: pauseColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: pauseColor.withOpacity(0.4)),
+                            ),
+                            child: Text(
+                              'PAUSED',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: pauseColor,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      session['subtitle'] as String,
+                      isPaused
+                          ? 'Say "continue" or "stop"'
+                          : session['subtitle'] as String,
                       style: TextStyle(
                         fontSize: 12,
-                        color: cs.onSurfaceVariant,
+                        color: isPaused ? pauseColor.withOpacity(0.8) : cs.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -146,7 +185,7 @@ class ActiveSessionCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
-                      color: color,
+                      color: isPaused ? pauseColor : color,
                       letterSpacing: 1.0,
                     ),
                   );
@@ -157,11 +196,13 @@ class ActiveSessionCard extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          'TAP PULSING CIRCLE TO STOP',
+          isPaused
+              ? 'SAY "CONTINUE" TO RESUME · "STOP" TO END'
+              : 'TAP MIC TO PAUSE · TAP CIRCLE TO STOP',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.bold,
-            color: cs.onSurfaceVariant.withOpacity(0.4),
+            color: (isPaused ? pauseColor : cs.onSurfaceVariant).withOpacity(0.5),
             letterSpacing: 1.0,
           ),
         ),
