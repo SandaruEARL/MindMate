@@ -67,7 +67,9 @@ class BreathingFaqCorpus {
     'passing out',
     'crisis',
     'help me now',
-    'call 911',
+    'call',
+    '119',
+    '1990',
     'ambulance',
   ];
 
