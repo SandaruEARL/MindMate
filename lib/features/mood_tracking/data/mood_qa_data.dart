@@ -31,8 +31,8 @@ const Map<String, List<MoodQA>> moodQAMap = {
         'productive',
         'productively',
         'this energy',
-        'that energy'
-            'energy',
+        'that energy',
+        'energy',
         'accomplish',
         'channel',
       ],
@@ -44,7 +44,7 @@ const Map<String, List<MoodQA>> moodQAMap = {
       keywords: ['Will this', 'last', 'permanent', 'fade', 'forever'],
       question: 'Will this feeling last?',
       answer:
-          'Feelings naturally shift, and that is okay. Rather than worrying about it ending, try to be fully present in it right now. Gratitude practices help you return to this kind of state more often over time.',
+          'Feelings naturally shift, and that is okay. Rather than worrying about it ending, try to be fully present in it right now. Gratitude practices support you in returning to this kind of state more often over time.',
     ),
     MoodQA(
       keywords: [
@@ -80,11 +80,18 @@ const Map<String, List<MoodQA>> moodQAMap = {
       keywords: ['Why do I', 'good today', 'reason', 'cause', 'because'],
       question: 'Why do I feel good today?',
       answer:
-          'Pausing to identify the source of a good mood is a powerful habit. Think about what happened differently today — enough sleep, a positive interaction, progress on something meaningful? Understanding it helps you recreate it.',
+          'Pausing to identify the source of a good mood is a powerful habit. Think about what happened differently today — enough sleep, a positive interaction, progress on something meaningful? Understanding it supports you in recreating it.',
     ),
     MoodQA(
-      keywords: ['Can I', 'give', 'help', 'kind', 'someone'],
-      question: 'Can I use this mood to help someone else?',
+      keywords: [
+        'Can I',
+        'give',
+        'kind',
+        'generous',
+        'someone',
+        'support them',
+      ],
+      question: 'Can I support someone else with this mood?',
       answer:
           'When you feel good, you have more emotional capacity to give. Reach out to someone who might need a kind word today. Acts of generosity deepen your own sense of wellbeing too.',
     ),
@@ -180,16 +187,17 @@ const Map<String, List<MoodQA>> moodQAMap = {
     ),
     MoodQA(
       keywords: [
-        'What can help',
+        'What can',
         'cheer',
         'heal',
         'recover',
         'feel better',
         'better',
+        'lighter',
       ],
-      question: 'What can help me feel better?',
+      question: 'What can ease this sadness?',
       answer:
-          'Small physical actions help when emotion feels heavy. Try drinking a glass of water, stepping outside briefly, or lying down and taking slow deep breaths. Connection also helps — even a short text to someone you trust can ease sadness.',
+          'Small physical actions work well when emotion feels heavy. Try drinking a glass of water, stepping outside briefly, or lying down and taking slow deep breaths. Connection also works — even a short text to someone you trust can ease sadness.',
     ),
     MoodQA(
       keywords: [
@@ -202,7 +210,7 @@ const Map<String, List<MoodQA>> moodQAMap = {
       ],
       question: 'Should I talk to someone about this?',
       answer:
-          'Sharing sadness with a trusted person almost always helps. It does not need to be a long conversation — just saying out loud how you feel to someone who listens can lift a significant weight. You do not have to carry this alone.',
+          'Sharing sadness with a trusted person almost always works. It does not need to be a long conversation — just saying out loud how you feel to someone who listens can lift a significant weight. You do not have to carry this alone.',
     ),
     MoodQA(
       keywords: ['Will this', 'sadness', 'pass', 'over', 'end', 'temporary'],
@@ -227,10 +235,10 @@ const Map<String, List<MoodQA>> moodQAMap = {
           'When everything feels too much, the first step is to stop adding more. Put down the to-do list. Breathe out slowly for a count of six. You only need to handle the next ten minutes, not everything at once.',
     ),
     MoodQA(
-      keywords: ['ask for help', 'ask', 'who', 'reach', 'nobody'],
-      question: 'How do I ask for help?',
+      keywords: ['ask', 'reach out', 'contact', 'someone', 'person', 'support'],
+      question: 'How do I reach out to someone for support?',
       answer:
-          'Asking for help is one of the bravest things you can do. You do not need to explain everything — simply saying "I am struggling and I could use some support" is enough. Most people want to help but wait to be invited in.',
+          'Reaching out is one of the bravest things you can do. You do not need to explain everything — simply saying "I am struggling and I could use some support" is enough. Most people want to support you but wait to be invited in.',
     ),
     MoodQA(
       keywords: [
@@ -284,7 +292,7 @@ const Map<String, List<MoodQA>> moodQAMap = {
       keywords: ['why', 'reason', 'Why am i', 'so angry', 'triggered', 'cause'],
       question: 'Why am I so angry?',
       answer:
-          'Anger is almost always a secondary emotion — underneath it is usually hurt, fear, or a sense of injustice. Ask yourself what need is not being met right now. Understanding the root cause helps you respond rather than just react.',
+          'Anger is almost always a secondary emotion — underneath it is usually hurt, fear, or a sense of injustice. Ask yourself what need is not being met right now. Understanding the root cause supports you in responding rather than just reacting.',
     ),
     MoodQA(
       keywords: ['express', 'communicate', 'say', 'tell'],
@@ -303,7 +311,7 @@ const Map<String, List<MoodQA>> moodQAMap = {
       ],
       question: 'How do I release this anger?',
       answer:
-          'Physical outlets work well — a brisk walk, running, or scrubbing something vigorously can discharge the energy of anger. Journaling also helps: write exactly what you feel without filtering. You do not have to send it to anyone.',
+          'Physical outlets work well — a brisk walk, running, or scrubbing something vigorously can discharge the energy of anger. Journaling also works: write exactly what you feel without filtering. You do not have to send it to anyone.',
     ),
     MoodQA(
       keywords: [
