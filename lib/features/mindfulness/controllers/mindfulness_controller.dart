@@ -66,7 +66,7 @@ class MindfulnessController extends ChangeNotifier {
 
   final List<MindfulnessMessage> chatHistory = [
     MindfulnessMessage(
-      "Hello! I am your Mindfulness VUI guide. Tap the microphone to talk to me, or choose a session below.",
+      'Tap the microphone to talk to me, or choose a session below.',
       isUser: false,
     ),
   ];
@@ -169,19 +169,25 @@ class MindfulnessController extends ChangeNotifier {
   // ── STT / Mic ─────────────────────────────────────────────────────────────
 
   Future<void> onMicTap() async {
+    // If mic is already open, always stop it first (regardless of session state)
+    if (isListening) {
+      await stopListening();
+      return;
+    }
     if (isPlaying) {
-      // Pause the session and listen for a voice command
+      // Pause the session then start listening for a voice command
       await pauseSession();
       await Future.delayed(const Duration(milliseconds: 400));
       await startListening();
       return;
     }
     if (isPaused) {
-      // Already paused – user taps mic again to speak
+      // Session is paused – tap mic to speak a command
       await startListening();
       return;
     }
-    isListening ? await stopListening() : await startListening();
+    // Normal idle state
+    await startListening();
   }
 
   Future<void> startListening() async {
