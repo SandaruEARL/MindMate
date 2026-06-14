@@ -13,7 +13,6 @@ import '../screens/pmr_screen.dart';
 import '../screens/sleep_graph.dart';
 import '../screens/wind_down_screen.dart';
 
-
 /// SleepController holds all business logic, state, and VUI handling
 /// for the Sleep Hygiene page. It is a [ChangeNotifier] so the UI can rebuild
 /// reactively on state changes.
@@ -81,34 +80,20 @@ class SleepController extends ChangeNotifier {
 
     await Future.delayed(const Duration(milliseconds: 200));
 
-    // ── Ask how last night went (quality rating) ────────────────────────────
-    // Only ask if there is a recent unrated record from yesterday or today.
-    final recent = await SleepRepository.loadLast(days: 2);
-    final unrated = recent.where((r) => r.quality == null).toList();
-    if (unrated.isNotEmpty && !_qualityAsked) {
-      _qualityAsked       = true;
-      _awaitingQualityRating = true;
-      const prompt =
-          "Welcome back! Before we start, how did you sleep last night? "
-          "Rate it from 1 to 5, where 1 is very poor and 5 is great.";
-      chatHistory.add(const SleepMessage(prompt, isUser: false));
-      notifyListeners();
-      await ttsService.speak(prompt);
-      await ttsService.awaitCompletion();
-      return; // intake starts after rating is received
-    }
-
-    // ── Standard intake greeting ────────────────────────────────────────────
     intakePhase = 'ask_issue';
     const greeting =
         "Hi! I'm your Sleep Hygiene assistant. "
-        "Before we start, I'd like to understand you a little better. "
-        "What's your main sleep concern right now? "
-        "Is it trouble falling asleep, waking up during the night, "
-        "waking up too early, or feeling unrefreshed in the morning?";
+        "What's your main sleep concern - trouble falling asleep, "
+        "waking during the night, waking too early, or feeling unrefreshed?";
+
     chatHistory.add(const SleepMessage(greeting, isUser: false));
+    notifyListeners();
+
     await ttsService.speak(greeting);
     await ttsService.awaitCompletion();
+
+    statusLabel = 'Tap the mic and speak';
+    notifyListeners();
   }
 
 
@@ -192,7 +177,7 @@ class SleepController extends ChangeNotifier {
     statusLabel  = 'Processing…';
     chatHistory.add(SleepMessage(displayLabel, isUser: true));
     notifyListeners();
-    await _handleVoiceCommand(command.toLowerCase());
+    await _handleTopicCommand(command.toLowerCase()); // ← bypass intake
     isProcessing = false;
     notifyListeners();
   }
@@ -396,7 +381,6 @@ class SleepController extends ChangeNotifier {
 
   Future<bool> _handleIntake(String text) async {
     switch (intakePhase) {
-
       case 'ask_issue':
         if (text.contains('fall') || text.contains('onset') ||
             text.contains('cannot sleep') || text.contains("can't sleep") ||
@@ -418,42 +402,13 @@ class SleepController extends ChangeNotifier {
             text.contains('rested')) {
           userIssue = 'quality';
         } else {
-          await _speak(
-            "I didn't quite catch that. Could you say: "
-                "trouble falling asleep, waking during the night, "
-                "waking too early, or feeling unrefreshed?",
-          );
-          return true;
+          // Doesn't match an issue keyword — likely an FAQ question.
+          // Don't consume it; fall through to normal intent matching.
+          return false;
         }
-        intakePhase = 'ask_bedtime';
-        notifyListeners();
-        await _speak("Got it. Around what time do you usually go to bed?");
-        return true;
-
-      case 'ask_bedtime':
-        userBedtime = text.trim().isEmpty ? 'an unspecified time' : text;
-        intakePhase = 'ask_waketime';
-        notifyListeners();
-        await _speak("And what time do you usually need to wake up?");
-        return true;
-
-      case 'ask_waketime':
-        userWakeTime = text.trim().isEmpty ? 'an unspecified time' : text;
         intakePhase = 'done';
         notifyListeners();
-        _currentRecord = await SleepRepository.saveRecord(
-          SleepRecord.newSession(
-            issue:    userIssue,
-            bedtime:  userBedtime,
-            wakeTime: userWakeTime,
-          ),
-        );
-        final personal =
-            "Thanks — that really helps. So you're heading to bed around $userBedtime "
-            "and up around $userWakeTime, with ${_issueSummary()} as your main concern. "
-            "I'll keep all of that in mind. What would you like help with first?";
-        await _speak(personal);
-        return true;
+        return false;
     }
     return false;
   }
@@ -486,57 +441,25 @@ class SleepController extends ChangeNotifier {
     }
   }
 
-  // ── Voice command handler ──────────────────────────────────────────────────
+  // ── Chip tap handler — always goes to intent engine, skips intake ──────────
+  Future<void> _handleTopicCommand(String text) async {
+    // Save and temporarily mark intake as done so intents fire correctly
+    final savedPhase = intakePhase;
+    intakePhase = 'done';
+    await _handleVoiceCommand(text);
+    // Restore intake phase only if it wasn't completed during the call
+    if (intakePhase == 'done' && savedPhase != 'done') {
+      intakePhase = savedPhase;
+    }
+  }
 
+  // ── Voice command handler ──────────────────────────────────────────────────
   Future<void> _handleVoiceCommand(String text) async {
     if (text.isEmpty) {
       statusLabel = "I didn't catch that. Try again.";
       notifyListeners();
       await ttsService.speak("I didn't catch that. Please try again.");
       await ttsService.awaitCompletion();
-      return;
-    }
-
-    // ── 0a. Quality rating intake ─────────────────────────────────────────────
-    if (_awaitingQualityRating) {
-      // Reset processing state immediately so the UI unlocks
-      isProcessing = false;
-      statusLabel  = 'Tap the mic and speak';
-      notifyListeners();
-
-      int? rating;
-      final t = text.trim();
-
-      // Exact digit match first, then word match
-      if      (t == '1' || t.contains('one')   || t.contains('very poor'))                          rating = 1;
-      else if (t == '2' || t.contains('two')   || (t.contains('poor') && !t.contains('very poor'))) rating = 2;
-      else if (t == '3' || t.contains('three') || t.contains('okay') || t.contains('ok'))           rating = 3;
-      else if (t == '4' || t.contains('four')  || t.contains('good'))                               rating = 4;
-      else if (t == '5' || t.contains('five')  || t.contains('great') || t.contains('amazing') || t.contains('excellent')) rating = 5;
-
-      if (rating != null) {
-        _awaitingQualityRating = false;
-        notifyListeners();
-        await SleepRepository.updateQuality(rating);
-        final labels = {1: 'very poor', 2: 'poor', 3: 'okay', 4: 'good', 5: 'great'};
-        await _speak(
-          "Got it — ${labels[rating]} sleep last night. "
-              "I've logged that for your progress chart. "
-              "Let's make tonight better. What's on your mind?",
-        );
-        intakePhase = 'ask_issue';
-        notifyListeners();
-        const q =
-            "First, what's your main sleep concern right now? "
-            "Is it trouble falling asleep, waking during the night, "
-            "waking too early, or feeling unrefreshed?";
-        await _speak(q);
-      } else {
-        await _speak(
-          "Sorry, I didn't catch that. Please say a number from 1 to 5, "
-              "or a word like poor, okay, or great.",
-        );
-      }
       return;
     }
 
@@ -649,6 +572,31 @@ class SleepController extends ChangeNotifier {
       // Unrecognised reply: fall through to normal intent matching below.
     }
 
+    // ── 2.8. Section voice triggers ───────────────────────────────────────────
+    if (text.contains('question') || text.contains('ask something') ||
+        text.contains('i have a question') || text.contains('learn about')) {
+      _consecutiveFallbacks = 0;
+      await _speak(
+        "Sure! You can ask me about trouble falling asleep, sleep stages, "
+            "caffeine and sleep, screen time, or how many hours of sleep you need. "
+            "Just say whichever one you'd like.",
+      );
+      return;
+    }
+
+    if (text.contains('activit') || text.contains('something to do') ||
+        text.contains('exercise') && text.contains('sleep') ||
+        text.contains('routine') && text.contains('start') ||
+        text.contains('relax') && text.contains('now')) {
+      _consecutiveFallbacks = 0;
+      await _speak(
+        "Happy to help you wind down. "
+            "Just say 'wind down' to start your bedtime routine, "
+            "or 'muscle relaxation' if you're feeling anxious or tense.",
+      );
+      return;
+    }
+
     // ── 3. Back / exit / stop — checked before any topic intents ──────────
     if (_hasWord(text, 'back') || _hasWord(text, 'home') ||
         _hasWord(text, 'exit') || _hasWord(text, 'quit') ||
@@ -673,7 +621,6 @@ class SleepController extends ChangeNotifier {
     }
 
     // ── 4. DEFINITIONAL / INFORMATIONAL intents ────────────────────────────
-    // These must come before ALL symptom/state intents so that question-form
     // utterances ("what is sleep", "explain REM") are never misrouted to an
     // emotional-state rule that happens to share a keyword.
 
@@ -706,21 +653,18 @@ class SleepController extends ChangeNotifier {
         text.contains('define sleep hygiene')   ||
         text.contains('sleep hygiene refers')   ||
         text.contains('sleep hygiene is')       ||
-        text.contains('sleep hygiene means')) {
+        text.contains('sleep hygiene means')    ||
+        text.contains('sleep hygiene')          ||
+        text.contains('healthy sleep habit')    ||
+        text.contains('good sleep habit')       ||
+        text.contains('hygiene'))
+    {
       _consecutiveFallbacks = 0;
-      final ack  = "Sleep hygiene is basically your sleep habits as a whole.";
-      final core = "It covers your bedtime routine, your sleep environment, and daytime habits like caffeine, exercise, and screen time.";
-
-      final bridge = _join(core,
-          "it works by reinforcing your circadian rhythm - the internal clock that decides when you feel sleepy or alert.",
-          type: 'elaboration');
-      currentState = 'awaiting_topic_choice';
-      pendingTopicContext = 'hygiene_areas';
-      notifyListeners();
-      final cta = "Want specific tips on screen time, caffeine and alcohol, your bedtime routine, or your sleep environment?";
-      await _speak('$ack $bridge $cta');
+      await _speak(
+        "Sleep hygiene is your habits, routine, and environment around sleep - "
+            "things like screen time, your wind-down routine, and keeping your room cool and dark.",
+      );
       return;
-
     }
 
     // 4c. Circadian rhythm
@@ -764,9 +708,9 @@ class SleepController extends ChangeNotifier {
         text.contains('never sleep well')             ||
         text.contains('sleep disorder')) {
       _consecutiveFallbacks = 0;
-      final ack  = "Insomnia is trouble falling or staying asleep at least 3 nights a week for over 3 months.";
-      final core = "The most effective fix is CBT-I - it outperforms sleeping pills with no side effects.";
-      final cta  = "If this has been going on a while, it's worth talking to a professional.";
+      final ack  = "Insomnia is when sleep problems happen most nights for months on end.";
+      final core = "The best treatment is CBT-I - it works better than sleeping pills, no side effects.";
+      final cta  = "If this sounds like you, a GP or sleep specialist is worth seeing.";
       await _speak('$ack $core $cta');
       return;
     }
@@ -780,14 +724,43 @@ class SleepController extends ChangeNotifier {
         text.contains('oversleeping')              ||
         text.contains('8 hours')                   ||
         text.contains('7 hours')                   ||
-        text.contains('9 hours')) {
+        text.contains('9 hours')                   ||
+        text.contains('how much sleep')            ||
+        text.contains('how many hours do i need')  ||
+        text.contains('hours of sleep do i need')) {
       _consecutiveFallbacks = 0;
-      final ack  = "Most adults need 7 to 9 hours a night.";
-      final core = "Teens need more, around 8 to 10, and younger kids even more than that.";
-      final bridge = _join("Quality matters as much as quantity",
-          "7 hours of deep, uninterrupted sleep beats 9 fragmented hours.",
-          type: 'contrast');
-      await _speak('$ack $core $bridge');
+      await _speak("For adults aged 18 to 30, 7 to 9 hours a night is the recommended range.");
+      return;
+    }
+
+    // 4f.5. Action-intent: starting/opening the bedtime routine session
+    if ((text.contains('start') || text.contains('begin') ||
+        text.contains('do my') || text.contains('open') ||
+        text.contains('launch') || text.contains('let\'s do') ||
+        text.contains('lets do') || text.contains('begin my')) &&
+        (text.contains('bedtime routine') ||
+            text.contains('wind down')        ||
+            text.contains('wind-down')        ||
+            text.contains('night routine')    ||
+            text.contains('sleep routine'))) {
+      _consecutiveFallbacks = 0;
+      await _speak("Starting your bedtime routine now.");
+      await _openWindDownScreen();
+      return;
+    }
+
+    // 4f.8. Bedtime routine STRUCTURE (what should I do, step by step)
+    if (text.contains('what should my bedtime routine') ||
+        text.contains('what should my routine')         ||
+        text.contains('bedtime routine look like')      ||
+        text.contains('routine look like')              ||
+        text.contains('steps for my bedtime')           ||
+        text.contains('what should i do before bed')) {
+      _consecutiveFallbacks = 0;
+      await _speak(
+        "Dim the lights an hour before bed, stop screens about 30 minutes before, "
+            "then read or stretch to wind down.",
+      );
       return;
     }
 
@@ -800,6 +773,13 @@ class SleepController extends ChangeNotifier {
         text.contains('bedtime routine')             ||
         text.contains('sleep routine')               ||
         text.contains('nighttime routine')           ||
+        text.contains('what should my bedtime')      ||
+        text.contains('what should i do at night')   ||
+        text.contains('before i sleep')              ||
+        (text.contains('before bed') &&
+            !text.contains('phone') && !text.contains('screen') &&
+            !text.contains('tv') && !text.contains('television') &&
+            !text.contains('tablet') && !text.contains('laptop'))  ||
         (text.contains('what time') && (text.contains('sleep') || text.contains('bed') || text.contains('wake'))) ||
         (text.contains('consistent') && (text.contains('sleep') || text.contains('bed') || text.contains('wake'))) ||
         (text.contains('same time') && (text.contains('sleep') || text.contains('bed') || text.contains('wake')))) {
@@ -883,7 +863,6 @@ class SleepController extends ChangeNotifier {
         text.contains('mind is racing')         ||
         text.contains('racing thoughts')        ||
         text.contains('thoughts keep me awake') ||
-        // ── NEW: "why can't I sleep" and similar phrasings ──────────────────
         text.contains('why cant i sleep')       ||
         text.contains("why can't i sleep")      ||
         text.contains('why am i not sleeping')  ||
@@ -893,24 +872,19 @@ class SleepController extends ChangeNotifier {
         text.contains('cannot get to sleep')    ||
         text.contains("can't get to sleep")     ||
         text.contains('unable to sleep')        ||
-        text.contains('having trouble sleeping')) {
+        text.contains('having trouble sleeping')    ||
+        text.contains('fall asleep faster')         ||
+        text.contains('sleep faster')               ||
+        text.contains('how to fall asleep')         ||
+        text.contains('how do i fall asleep')) {
 
       _consecutiveFallbacks = 0;
       final prefix = _contextPrefix();
-
-      // Brief spoken tip first
-      final ack    = "Lying awake with a busy mind is one of the hardest things.";
-      final tip1   = "Try 4-7-8 breathing: in for 4, hold for 7, out for 8.";
-      final bridge = _join(tip1,
-          "it activates your parasympathetic nervous system — your body's actual off switch.",
-          type: 'elaboration');
-      final cta    = "I'm also opening a visual relaxation screen for you — "
-          "rhythmic patterns with calming audio to help your mind let go.";
-
-      await _speak('$prefix$ack $bridge');
-      await _speak(cta);
+      await _speak(
+        '${prefix}Try 4-7-8 breathing: in for 4, hold for 7, out for 8. '
+            'Cutting screens 30 minutes before bed and a bit of light stretching also help.',
+      );
       return;
-
     }
 
     // 6b. Waking during the night
@@ -963,8 +937,7 @@ class SleepController extends ChangeNotifier {
       final prefix = _contextPrefix();
       await _speak(
         '${prefix}Anxiety is one of the biggest reasons people can\'t switch off at night. '
-            'I\'m opening a Progressive Muscle Relaxation session for you - '
-            'it physically releases the tension that anxiety stores in your body.',
+            'Opening a muscle relaxation session for you now.',
       );
       await _openPmrScreen();
       return;
@@ -1013,15 +986,16 @@ class SleepController extends ChangeNotifier {
         text.contains('blue light')           || text.contains('social media')   ||
         text.contains('scrolling')            || _hasWord(text, 'laptop')        ||
         _hasWord(text, 'tablet')              || text.contains('tv before bed')  ||
-        text.contains('television before bed')|| text.contains('watching before bed')) {
+        text.contains('television before bed')|| text.contains('watching before bed')       ||
+        text.contains('phone before bed')          ||
+        text.contains('phone affect sleep')        ||
+        text.contains('does screen affect sleep')  ||
+        text.contains('does phone affect sleep')) {
       _consecutiveFallbacks = 0;
-      final ack  = "Screens before bed are genuinely one of the hardest habits to break.";
-      final core = "Blue light blocks melatonin - the hormone that makes you feel sleepy.";
-      final bridge = _join(core,
-          "even 30 minutes off screens before bed makes a measurable difference.",
-          type: 'reason');
-      final cta = "Try switching to a book, light stretching, or a podcast instead.";
-      await _speak('$ack $bridge $cta');
+      await _speak(
+        "Yes - blue light from screens blocks melatonin, the hormone that makes you sleepy. "
+            "Try going screen-free for the last 30 minutes before bed.",
+      );
       return;
     }
 
@@ -1100,13 +1074,12 @@ class SleepController extends ChangeNotifier {
         text.contains('prepare for sleep')           ||
         text.contains('get ready for sleep')         ||
         text.contains('relax before bed')            ||
-        text.contains('before bed routine')) {
+        text.contains('before bed routine')          ||
+        text.contains('bedtime routine session')     ||
+        text.contains('wind down session')           ||
+        text.contains('wind-down session')) {
       _consecutiveFallbacks = 0;
-      await _speak(
-        "A wind-down routine makes a real difference. "
-            "I'm opening a guided routine for you now - "
-            "it'll walk you through dimming lights, going screen-free, and slow breathing.",
-      );
+      await _speak("Starting your bedtime routine now.");
       await _openWindDownScreen();
       return;
     }
@@ -1211,21 +1184,17 @@ class SleepController extends ChangeNotifier {
     if (_consecutiveFallbacks > 2) {
       _consecutiveFallbacks = 0;
       const msg =
-          "Sorry, I think the information is not present in my current database. "
-          "Sorry, try another common question.";
+          "I don't have anything on that one. Try asking about sleep tips, screen time, caffeine, or say 'help' to see what I can do.";
       chatHistory.add(const SleepMessage(msg, isUser: false));
       notifyListeners();
       await ttsService.speak(msg);
       await ttsService.awaitCompletion();
     } else {
       const msg =
-          "I am sorry, I didn't catch that. Could you please repeat the question? "
-          "Try asking about sleep tips, bedtime routines, screen time, naps, or say 'help' to see everything I can do.";
+          "Sorry, didn't catch that. Try asking about sleep tips, screen time, naps, or say 'help'.";
       chatHistory.add(const SleepMessage(msg, isUser: false));
       notifyListeners();
-      await ttsService.speak(
-        "I am sorry, I didn't catch that. Could you please repeat the question?",
-      );
+      await ttsService.speak("Sorry, didn't catch that. Could you say that again?");
       await ttsService.awaitCompletion();
     }
   }

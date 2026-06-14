@@ -1,5 +1,7 @@
 // sleep_vui_screen.dart
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mindmate/core/widgets/voice_mic_button.dart';
 import 'package:mindmate/features/sleep_hygiene/screens/sleep_graph.dart';
@@ -148,8 +150,7 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
 
             const SizedBox(height: 20),
 
-            // ── Topic chips — sleep-specific interactive section ───────────
-            // Horizontal scrolling row, same pattern as ActionChips in Breathing.
+            // ── Topic chips ────────────────────────────────────────────────────────────
             SizedBox(
               height: 40,
               child: ListView.separated(
@@ -168,50 +169,96 @@ class _SleepVuiScreenState extends State<SleepVuiScreen>
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
+            // ── Activity buttons ───────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Divider(height: 1, color: Colors.black.withValues(alpha: 0.05)),
-            ),
-
-            // ── Chat area ──────────────────────────────────────────────────
-            Expanded(
-              child: Column(
+              child: Row(
                 children: [
                   Expanded(
-                    child: _controller.chatHistory.isEmpty
-                        ? _EmptyState(accentColor: _accent)
-                        : ListView.builder(
-                      controller: _scrollController,
-                      padding:    const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                      itemCount:  _controller.chatHistory.length + (isBusy ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == _controller.chatHistory.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16, left: 36),
-                            child:   _ThinkingDots(color: _accent),
-                          );
-                        }
-                        return _ChatBubble(
-                          message:     _controller.chatHistory[index],
-                          accentColor: _accent,
-                        );
-                      },
+                    child: _ActivityButton(
+                      emoji:    '🌬️',
+                      label:    'Bedtime routine',
+                      disabled: isBusy,
+                      onTap: () => _controller.sendTextCommand('Wind-down routine', 'wind down'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ActivityButton(
+                      emoji:    '💪',
+                      label:    'Muscle relaxation',
+                      disabled: isBusy,
+                      onTap: () => _controller.sendTextCommand('Muscle relaxation', 'anxious need pmr'),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // ── Mic button — identical position/widget as all other modules ─
+            const SizedBox(height: 12),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-              child: VoiceMicButton(
-                isListening:    _controller.isListening,
-                onTap:          _controller.onMicTap,
-                statusLabel:    _controller.statusLabel,
-                recognizedText: _controller.recognizedText,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Divider(height: 1, color: Colors.black.withValues(alpha: 0.05)),
+            ),
+
+            // ── Chat area ──────────────────────────────────────────────────
+            // ── Chat + Mic stacked ─────────────────────────────────────────────────────
+            Expanded(
+              child: Stack(
+                children: [
+                  // Chat list fills full area
+                  Positioned.fill(
+                    child: _controller.chatHistory.isEmpty
+                        ? _EmptyState(accentColor: _accent)
+                        : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
+                      itemCount: _controller.chatHistory.length + (isBusy ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == _controller.chatHistory.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16, left: 36),
+                            child: _ThinkingDots(color: _accent),
+                          );
+                        }
+                        return _ChatBubble(
+                          key:         ValueKey(index),
+                          message:     _controller.chatHistory[index],
+                          accentColor: _accent,
+                          animate:     index == _controller.chatHistory.length - 1,
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Mic button pinned to bottom
+                  Positioned(
+                    left:   0,
+                    right:  0,
+                    bottom: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end:   Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.white.withValues(alpha: 0.95),
+                          ],
+                        ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                      child: VoiceMicButton(
+                        isListening:    _controller.isListening,
+                        onTap:          _controller.onMicTap,
+                        statusLabel:    _controller.statusLabel,
+                        recognizedText: _controller.recognizedText,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -332,17 +379,76 @@ class _EmptyState extends StatelessWidget {
 // Chat bubble — mirrors MoodTrackingPage._buildTurn() exactly
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _ChatBubble extends StatelessWidget {
+class _ChatBubble extends StatefulWidget {
   const _ChatBubble({
+    super.key,
     required this.message,
     required this.accentColor,
+    this.animate = false,
   });
 
   final SleepMessage message;
   final Color        accentColor;
+  final bool         animate;
+
+  @override
+  State<_ChatBubble> createState() => _ChatBubbleState();
+}
+
+class _ChatBubbleState extends State<_ChatBubble> {
+  String _displayText = '';
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate && !widget.message.isUser) {
+      _startTyping();
+    } else {
+      _displayText = widget.message.text;
+    }
+  }
+
+  void _startTyping() {
+    final text = widget.message.text;
+    if (text.isEmpty) return;
+
+    final words = text.split(' ');
+
+    // Estimate total speech duration based on ~150 words/min average rate
+    const wordsPerMinute = 150;
+    final estimatedSeconds = (words.length / wordsPerMinute) * 60;
+    final totalDurationMs = (estimatedSeconds * 1000).clamp(500, 30000);
+
+    final wordDuration = Duration(
+      milliseconds: (totalDurationMs / words.length).round().clamp(50, 400),
+    );
+
+    int index = 0;
+    _timer = Timer.periodic(wordDuration, (timer) {
+      if (index >= words.length) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        index++;
+        _displayText = words.sublist(0, index).join(' ');
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final message     = widget.message;
+    final accentColor = widget.accentColor;
+    final text         = _displayText;
+
     if (!message.isUser) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 20),
@@ -381,7 +487,7 @@ class _ChatBubble extends StatelessWidget {
                   ],
                 ),
                 child: Text(
-                  message.text,
+                  text,
                   style: const TextStyle(
                     fontSize:   15,
                     fontWeight: FontWeight.w500,
@@ -423,7 +529,7 @@ class _ChatBubble extends StatelessWidget {
                 ],
               ),
               child: Text(
-                message.text,
+                text,
                 style: const TextStyle(
                   fontSize:   15,
                   color:      Colors.white,
@@ -646,6 +752,59 @@ class _SleepStatsCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityButton extends StatelessWidget {
+  const _ActivityButton({
+    required this.emoji,
+    required this.label,
+    required this.disabled,
+    required this.onTap,
+  });
+
+  final String       emoji;
+  final String       label;
+  final bool         disabled;
+  final VoidCallback onTap;
+
+  static const Color _accent = Color(0xFF3F51B5);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: disabled ? null : onTap,
+      child: AnimatedOpacity(
+        opacity:  disabled ? 0.45 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color:        _accent.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border:       Border.all(color: _accent.withValues(alpha: 0.20)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 15)),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize:   13,
+                    fontWeight: FontWeight.w600,
+                    color:      _accent,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
