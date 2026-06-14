@@ -182,6 +182,7 @@ class MindfulnessController extends ChangeNotifier {
     statusLabel = 'Listening…';
     notifyListeners();
 
+    await sttEngine.cancel(); // Clear any broken or hanging STT states
     await sttEngine.listen(
       onResult: (r) {
         recognizedText = r.recognizedWords;
@@ -236,6 +237,7 @@ class MindfulnessController extends ChangeNotifier {
     // But ONLY if the user hasn't already manually turned it on by interrupting us!
     if (!isListening) {
       if (currentState != 'idle' && _context != null && _context!.mounted) {
+        await Future.delayed(const Duration(milliseconds: 1000)); // Delay to allow TTS to release audio focus
         await startListening();
       } else {
         statusLabel = 'Press microphone to talk';
@@ -604,10 +606,12 @@ class MindfulnessController extends ChangeNotifier {
       return;
     }
 
-    // 8d. Low self-esteem / Self-criticism
+    // 8d. Low self-esteem / Self-criticism / Loneliness
     if (text.contains('hate myself') || text.contains('worthless') || text.contains('not good enough') ||
         text.contains('failure') || text.contains('i failed') || text.contains('self doubt') ||
-        text.contains('low confidence') || text.contains('insecure')) {
+        text.contains('low confidence') || text.contains('insecure') || text.contains('lonely') ||
+        text.contains('alone') || text.contains('love my self') || text.contains('love myself') ||
+        text.contains('need some love')) {
       detectedEmotion = 'sad';
       currentState = 'awaiting_session_confirmation';
       recommendedSession = 'loving_kindness';
@@ -675,14 +679,14 @@ class MindfulnessController extends ChangeNotifier {
       statusLabel = 'Processing locally…';
       notifyListeners();
       
-      if (text.contains('mindfulness') || text.contains('meditation')) {
-        currentState = 'awaiting_session_confirmation';
-        recommendedSession = 'beginner';
+      if (text.contains('mindfulness') || text.contains('meditation') || text.contains('meditate')) {
+        currentState = 'idle'; // Reset state so the direct command catcher handles their reply
+        activeTab = 'chat'; // Switch to chat screen
         notifyListeners();
         await speakConversationalResponse(
           'Mindfulness and meditation can help calm your nervous system. '
-          'We have sessions like Beginner Meditation, Focus, or Loving Kindness. '
-          'Would you like me to start the Beginner Meditation for you?',
+          'We have sessions like Mindful Observation, Loving Kindness, Beginner Meditation, Anxiety Reduction, Focus and Concentration, and Gratitude. '
+          'Which session would you like me to start for you?',
         );
       } else if (text.contains('anxiety')) {
         await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Anxiety Reduction meditation?');
