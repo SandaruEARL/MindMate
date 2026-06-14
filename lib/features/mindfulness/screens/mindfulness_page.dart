@@ -19,6 +19,7 @@ class MindfulnessPage extends StatefulWidget {
 class _MindfulnessPageState extends State<MindfulnessPage>
     with TickerProviderStateMixin {
   late final MindfulnessController _ctrl;
+  bool _micVisible = true;
 
   @override
   void initState() {
@@ -129,7 +130,9 @@ class _MindfulnessPageState extends State<MindfulnessPage>
               bottom: false,
               child: GestureDetector(
                 onTap: () {
-                  if (!_ctrl.isPlaying && _ctrl.activeTab != 'chat') {
+                  if (_ctrl.isPlaying) {
+                    setState(() => _micVisible = !_micVisible);
+                  } else if (_ctrl.activeTab != 'chat') {
                     _ctrl.setActiveTab('chat');
                   }
                 },
@@ -281,11 +284,20 @@ class _MindfulnessPageState extends State<MindfulnessPage>
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-                child: VoiceMicButton(
-                  isListening: _ctrl.isListening,
-                  onTap: _ctrl.onMicTap,
-                  statusLabel: _ctrl.statusLabel,
-                  recognizedText: _ctrl.recognizedText,
+                child: AnimatedSlide(
+                  offset: _micVisible ? Offset.zero : const Offset(0, 1.5),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedOpacity(
+                    opacity: _micVisible ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: VoiceMicButton(
+                      isListening: _ctrl.isListening,
+                      onTap: _ctrl.onMicTap,
+                      statusLabel: _ctrl.statusLabel,
+                      recognizedText: _ctrl.recognizedText,
+                    ),
+                  ),
                 ),
               ),
             ),
