@@ -46,7 +46,7 @@ class EmergencySupportController extends ChangeNotifier {
         notifyListeners();
         await speak(
           'Which contact would you like to call? '
-          'Say mental health hotline, Friend, or emergency services.',
+          'Say police, ambulance, fire and rescue, mental health hotline, or friend.',
         );
       } else {
         final contact = emergencyContacts.firstWhere(
@@ -84,8 +84,8 @@ class EmergencySupportController extends ChangeNotifier {
       await Future.delayed(const Duration(milliseconds: 400));
       await speak(
         'You are in Emergency Support. Help is available. '
-        'You can say: call mental health hotline, call emergency services, '
-        'or call Friend. Say back to return home.',
+        'You can say: call police, call ambulance, call fire and rescue, '
+        'call mental health hotline, or call friend. Say back to return home.',
       );
     }
   }
@@ -94,14 +94,22 @@ class EmergencySupportController extends ChangeNotifier {
     sttAvailable = await sttEngine.initialize(
       onError: (e) {
         debugPrint('STT error: $e');
+        // Force full reset regardless of isProcessing
         isListening = false;
-        statusLabel = 'Error. Try again.';
+        isProcessing = false;
+        statusLabel = 'Tap the mic to speak';
         notifyListeners();
       },
       onStatus: (s) {
-        debugPrint('STT status: $s');
-        if (s == 'done' && isListening) {
-          stopListening();
+        debugPrint(
+          'STT status: $s | isListening: $isListening | isProcessing: $isProcessing',
+        );
+        if (s == 'done' || s == 'notListening') {
+          isListening = false; // ← stop blinking immediately
+          notifyListeners();
+          if (!isProcessing) {
+            stopListening();
+          }
         }
       },
     );
@@ -163,21 +171,35 @@ class EmergencySupportController extends ChangeNotifier {
         }
       },
       listenFor: const Duration(seconds: 15),
-      pauseFor: const Duration(seconds: 4),
+      pauseFor: const Duration(seconds: 8),
+      partialResults: true,
+      cancelOnError: false,
+      listenMode: stt.ListenMode.confirmation,
       localeId: 'en_US',
     );
   }
 
   Future<void> stopListening() async {
+    isListening = false; // ← always reset UI first
+    notifyListeners();
+
     if (isProcessing) return;
     isProcessing = true;
     await sttEngine.stop();
     await Future.delayed(const Duration(milliseconds: 200));
-    isListening = false;
     statusLabel = 'Processing…';
     notifyListeners();
 
     await Future.delayed(const Duration(milliseconds: 400));
+
+    if (recognizedText.trim().isEmpty) {
+      // Nothing was heard — skip processing, just reset
+      statusLabel = 'Tap the mic to speak';
+      isProcessing = false;
+      notifyListeners();
+      return;
+    }
+
     await _handleVoiceCommand(recognizedText.toLowerCase().trim());
     isProcessing = false;
     notifyListeners();
@@ -218,7 +240,7 @@ class EmergencySupportController extends ChangeNotifier {
         notifyListeners();
         await speak(
           'Which contact would you like to call? '
-          'Say mental health hotline, Friend, or emergency services.',
+          'Say police, ambulance, fire and rescue, mental health hotline, or friend.',
         );
       } else {
         // 5. RESPONSE (Trigger confirmation flow)
@@ -235,8 +257,8 @@ class EmergencySupportController extends ChangeNotifier {
     statusLabel = 'Try: "call mental health hotline"';
     notifyListeners();
     await speak(
-      'You can say: call mental health hotline, call emergency services, '
-      'call Friend, or back.',
+      'You can say: call police, call ambulance, call fire and rescue, '
+      'call mental health hotline, or call friend. Say back to return home.',
     );
     statusLabel = 'Tap the mic to speak';
     notifyListeners();
@@ -263,19 +285,13 @@ class EmergencySupportController extends ChangeNotifier {
     }
 
     pendingCall = contact;
-    statusLabel = 'Say "confirm" or "cancel"';
+    statusLabel = 'Tap mic, then say "confirm" or "cancel"';
     notifyListeners();
 
     await speak(
-      'Do you want me to call ${contact.title} at $number? '
-      'Say confirm to call, or cancel.',
+      'Do you want me to call ${contact.title} '
+      'Tap the microphone, then say confirm to call, or cancel.',
     );
-
-    // Auto-start mic for confirmation
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (!isListening && !isProcessing) {
-      await startListening();
-    }
   }
 
   Future<void> handleConfirmation(String text) async {
@@ -300,17 +316,12 @@ class EmergencySupportController extends ChangeNotifier {
       notifyListeners();
       await speak('Call cancelled. I am here if you need anything.');
     } else {
-      // Didn't catch a valid confirm/cancel — re-prompt and listen again
-      statusLabel = 'Say "confirm" or "cancel"';
+      // Didn't catch a valid confirm/cancel — ask user to tap and try again
+      statusLabel = 'Tap mic, then say "confirm" or "cancel"';
       notifyListeners();
       await speak(
-        'Sorry, I didn\'t catch that. Please say confirm to call ${contact.title}, or cancel.',
+        'Sorry, I didn\'t catch that. Tap the microphone and say confirm to call ${contact.title}, or cancel.',
       );
-
-      await Future.delayed(const Duration(milliseconds: 400));
-      if (!isListening && !isProcessing) {
-        await startListening();
-      }
     }
   }
 

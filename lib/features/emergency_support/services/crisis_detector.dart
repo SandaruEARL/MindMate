@@ -156,6 +156,9 @@ class CrisisDetector {
       '110',
     ],
     'mental_health': [
+      'mental',
+      'mental issue',
+      'mental problem',
       'mental health',
       'hotline',
       'mental health hotline',
