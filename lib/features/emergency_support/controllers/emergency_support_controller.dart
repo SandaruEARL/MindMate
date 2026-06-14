@@ -30,8 +30,8 @@ class EmergencySupportController extends ChangeNotifier {
 
   String numberFor(EmergencyContact c) =>
       customNumbers[c.key]?.isNotEmpty == true
-          ? customNumbers[c.key]!
-          : c.defaultNumber;
+      ? customNumbers[c.key]!
+      : c.defaultNumber;
 
   // ── Initialization ──
 
@@ -110,7 +110,20 @@ class EmergencySupportController extends ChangeNotifier {
 
   Future<void> speak(String text) async {
     await tts.stop();
+
+    final completer = Completer<void>();
+    tts.setCompletionHandler(() {
+      if (!completer.isCompleted) completer.complete();
+    });
+    tts.setCancelHandler(() {
+      if (!completer.isCompleted) completer.complete();
+    });
+    tts.setErrorHandler((msg) {
+      if (!completer.isCompleted) completer.complete();
+    });
+
     await tts.speak(text);
+    await completer.future;
   }
 
   // ── Spoken Language System Pipeline ──
@@ -126,8 +139,16 @@ class EmergencySupportController extends ChangeNotifier {
       await speak('Speech recognition not available.');
       return;
     }
+
+    if (sttEngine.isListening) {
+      await sttEngine.stop();
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
     await tts.stop();
-    await Future.delayed(const Duration(milliseconds: 600));
+    await Future.delayed(
+      const Duration(milliseconds: 300),
+    ); // buffer after TTS release
     isListening = true;
     recognizedText = '';
     statusLabel = 'Listening…';
@@ -151,7 +172,7 @@ class EmergencySupportController extends ChangeNotifier {
     if (isProcessing) return;
     isProcessing = true;
     await sttEngine.stop();
-    await tts.stop();
+    await Future.delayed(const Duration(milliseconds: 200));
     isListening = false;
     statusLabel = 'Processing…';
     notifyListeners();
@@ -188,7 +209,7 @@ class EmergencySupportController extends ChangeNotifier {
 
     // NLU & Intent: Check for "Call" intent
     final callKey = CrisisDetector.detectCallIntent(text);
-    
+
     // Dialogue Manager: Act on Intent
     if (callKey != null) {
       if (callKey == 'unknown') {
@@ -222,7 +243,7 @@ class EmergencySupportController extends ChangeNotifier {
   }
 
   // ── Confirmation Flow (Dialogue State: Awaiting Confirmation) ──
-  
+
   void onContactTap(EmergencyContact contact) {
     askConfirmation(contact);
   }
@@ -260,12 +281,11 @@ class EmergencySupportController extends ChangeNotifier {
   Future<void> handleConfirmation(String text) async {
     final contact = pendingCall!;
 
-    // NLU & Intent for confirmation phase
     if (CrisisDetector.isConfirm(text)) {
       pendingCall = null;
       statusLabel = 'Calling…';
       notifyListeners();
-      
+
       await speak('Calling ${contact.title} now.');
       await Future.delayed(const Duration(milliseconds: 500));
       final success = await CallService.call(numberFor(contact));
@@ -280,9 +300,17 @@ class EmergencySupportController extends ChangeNotifier {
       notifyListeners();
       await speak('Call cancelled. I am here if you need anything.');
     } else {
+      // Didn't catch a valid confirm/cancel — re-prompt and listen again
+      statusLabel = 'Say "confirm" or "cancel"';
+      notifyListeners();
       await speak(
-        'Please say confirm to call ${contact.title}, or cancel to go back.',
+        'Sorry, I didn\'t catch that. Please say confirm to call ${contact.title}, or cancel.',
       );
+
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!isListening && !isProcessing) {
+        await startListening();
+      }
     }
   }
 

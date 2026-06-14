@@ -42,7 +42,9 @@ class HomeController extends ChangeNotifier {
     await tts.setVolume(1.0);
     await tts.setPitch(1.0);
     await Future.delayed(const Duration(milliseconds: 600));
-    await speak('Welcome to MindMate. Tap the microphone and tell me where you want to go.');
+    await speak(
+      'Welcome to MindMate. Tap the microphone and tell me where you want to go.',
+    );
   }
 
   Future<void> _initStt() async {
@@ -75,7 +77,7 @@ class HomeController extends ChangeNotifier {
       await speak('Speech recognition is not available on this device.');
       return;
     }
-    
+
     await tts.stop();
     isListening = true;
     recognizedText = '';
@@ -103,13 +105,13 @@ class HomeController extends ChangeNotifier {
     isListening = false;
     statusLabel = 'Processing…';
     notifyListeners();
-    
+
     if (recognizedText.isNotEmpty) {
       final textToProcess = recognizedText.toLowerCase();
       recognizedText = '';
       await _handleVoiceCommand(textToProcess);
     }
-    
+
     isProcessing = false;
     notifyListeners();
   }
@@ -140,15 +142,32 @@ class HomeController extends ChangeNotifier {
       intent = 'NAVIGATE_BREATHING_EXERCISE';
     } else if (mindfulnessId != null) {
       intent = 'NAVIGATE_MINDFULNESS_SESSION';
-    } else if (text.contains('breath') || text.contains('relax') || text.contains('calm') || text.contains('exercise')) {
+    } else if (text.contains('breath') ||
+        text.contains('relax') ||
+        text.contains('calm') ||
+        text.contains('exercise')) {
       intent = 'NAVIGATE_BREATHING';
-    } else if (text.contains('sleep') || text.contains('rest') || text.contains('bedtime') || text.contains('hygiene') || text.contains('insomnia')) {
+    } else if (text.contains('sleep') ||
+        text.contains('rest') ||
+        text.contains('bedtime') ||
+        text.contains('hygiene') ||
+        text.contains('insomnia')) {
       intent = 'NAVIGATE_SLEEP';
-    } else if (text.contains('mindful') || text.contains('meditat') || text.contains('aware') || text.contains('present')) {
+    } else if (text.contains('mindful') ||
+        text.contains('meditat') ||
+        text.contains('aware') ||
+        text.contains('present')) {
       intent = 'NAVIGATE_MINDFULNESS';
-    } else if (text.contains('mood') || text.contains('feeling') || text.contains('emotion') || text.contains('track')) {
+    } else if (text.contains('mood') ||
+        text.contains('feeling') ||
+        text.contains('emotion') ||
+        text.contains('track')) {
       intent = 'NAVIGATE_MOOD';
-    } else if (text.contains('emergency') || text.contains('crisis') || text.contains('urgent') || text.contains('support') || text.contains('call')) {
+    } else if (text.contains('emergency') ||
+        text.contains('crisis') ||
+        text.contains('urgent') ||
+        text.contains('support') ||
+        text.contains('call')) {
       intent = 'NAVIGATE_EMERGENCY';
     }
 
@@ -206,9 +225,12 @@ class HomeController extends ChangeNotifier {
     if (speechResponse.isNotEmpty) {
       await speak(speechResponse);
     }
-    
+
     if (_context != null && _context!.mounted && targetPage != null) {
-      await Navigator.push(_context!, MaterialPageRoute(builder: (_) => targetPage!));
+      await Navigator.push(
+        _context!,
+        MaterialPageRoute(builder: (_) => targetPage!),
+      );
       await speak('You are back on the home page.');
       statusLabel = 'Tap the mic and speak';
       notifyListeners();

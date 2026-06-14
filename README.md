@@ -39,7 +39,7 @@ The app enables users to interact through natural voice conversations and receiv
 | CT2020/012 | Herman P.H.S.L | 😴 Sleep Hygiene & Bedtime Routines |
 | CT2020/027 | Kumara J.A.C.D | 😊 Mood Tracking & Emotional Check-ins |
 | CT2020/046 | Dangampola E.R | 🧘 Mindfulness & Meditation Guidance |
-| CT2020/075 | Channa | 🆘 Professional Help & Emergency Contacts |
+| CT2020/075 | Rathnayaka H.M.T.C.B | 🆘 Professional Help & Emergency Contacts |
 | CT2020/086 | Jayawickrama G.K.W | 🫁 Breathing Exercises & Guided Relaxation |
 
 ---

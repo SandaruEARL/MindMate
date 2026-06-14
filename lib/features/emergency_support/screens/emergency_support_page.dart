@@ -5,7 +5,7 @@ import '../controllers/emergency_support_controller.dart';
 
 class EmergencySupportPage extends StatefulWidget {
   const EmergencySupportPage({super.key, this.initialCallKey});
-  
+
   final String? initialCallKey;
 
   @override
@@ -34,7 +34,9 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
   }
 
   Future<void> _editNumber(EmergencyContact contact) async {
-    final textController = TextEditingController(text: _controller.numberFor(contact));
+    final textController = TextEditingController(
+      text: _controller.numberFor(contact),
+    );
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -152,7 +154,9 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: _controller.pendingCall!.color.withOpacity(0.4),
+                          color: _controller.pendingCall!.color.withOpacity(
+                            0.4,
+                          ),
                           width: 2,
                         ),
                       ),
@@ -164,9 +168,15 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                             height: 64,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _controller.pendingCall!.color.withOpacity(0.12),
+                              color: _controller.pendingCall!.color.withOpacity(
+                                0.12,
+                              ),
                             ),
-                            child: Icon(_controller.pendingCall!.icon, color: _controller.pendingCall!.color, size: 32),
+                            child: Icon(
+                              _controller.pendingCall!.icon,
+                              color: _controller.pendingCall!.color,
+                              size: 32,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -179,18 +189,29 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
-                              color: _controller.pendingCall!.color.withOpacity(0.08),
+                              color: _controller.pendingCall!.color.withOpacity(
+                                0.08,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.phone_rounded, color: _controller.pendingCall!.color, size: 18),
+                                Icon(
+                                  Icons.phone_rounded,
+                                  color: _controller.pendingCall!.color,
+                                  size: 18,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  _controller.numberFor(_controller.pendingCall!),
+                                  _controller.numberFor(
+                                    _controller.pendingCall!,
+                                  ),
                                   style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w900,
@@ -206,16 +227,24 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                _controller.isListening ? Icons.mic_rounded : Icons.mic_off_rounded,
+                                _controller.isListening
+                                    ? Icons.mic_rounded
+                                    : Icons.mic_off_rounded,
                                 size: 16,
-                                color: _controller.isListening ? _controller.pendingCall!.color : cs.onSurfaceVariant,
+                                color: _controller.isListening
+                                    ? _controller.pendingCall!.color
+                                    : cs.onSurfaceVariant,
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _controller.isListening ? 'Listening for your voice…' : 'Say "confirm" or "cancel"',
+                                _controller.isListening
+                                    ? 'Listening for your voice…'
+                                    : 'Say "confirm" or "cancel"',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: _controller.isListening ? _controller.pendingCall!.color : cs.onSurfaceVariant,
+                                  color: _controller.isListening
+                                      ? _controller.pendingCall!.color
+                                      : cs.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -225,25 +254,41 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                             children: [
                               Expanded(
                                 child: FilledButton.icon(
-                                  onPressed: () => _controller.handleConfirmation('confirm'),
+                                  onPressed: () =>
+                                      _controller.handleConfirmation('confirm'),
                                   icon: const Icon(Icons.call_rounded),
                                   label: const Text('Confirm'),
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: _controller.pendingCall!.color,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                    backgroundColor:
+                                        _controller.pendingCall!.color,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    textStyle: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: () => _controller.handleConfirmation('cancel'),
+                                  onPressed: () =>
+                                      _controller.handleConfirmation('cancel'),
                                   style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    side: BorderSide(color: _controller.pendingCall!.color.withOpacity(0.4)),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    side: BorderSide(
+                                      color: _controller.pendingCall!.color
+                                          .withOpacity(0.4),
+                                    ),
                                   ),
-                                  child: const Text('Cancel', style: TextStyle(fontSize: 15)),
+                                  child: const Text(
+                                    'Cancel',
+                                    style: TextStyle(fontSize: 15),
+                                  ),
                                 ),
                               ),
                             ],
@@ -262,7 +307,9 @@ class _EmergencySupportPageState extends State<EmergencySupportPage> {
                   isListening: _controller.isListening,
                   onTap: _controller.onMicTap,
                   statusLabel: _controller.statusLabel,
-                  recognizedText: _controller.isListening ? _controller.recognizedText : null,
+                  recognizedText: _controller.isListening
+                      ? _controller.recognizedText
+                      : null,
                 ),
               ),
             ],
@@ -298,14 +345,22 @@ class _Banner extends StatelessWidget {
         children: [
           const Text(
             '🆘  You are not alone',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             pendingCall != null
                 ? 'Say "confirm" to call, or "cancel" to go back.'
                 : 'Help is always available. Tap a contact or use your voice.',
-            style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -340,7 +395,9 @@ class _ContactCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isPending ? contact.color.withOpacity(0.15) : contact.color.withOpacity(0.08),
+          color: isPending
+              ? contact.color.withOpacity(0.15)
+              : contact.color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: contact.color.withOpacity(isPending ? 0.5 : 0.2),
@@ -358,27 +415,45 @@ class _ContactCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(contact.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(
+                    contact.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     hasNumber ? number : 'Tap ✏️ to add number',
                     style: TextStyle(
                       color: hasNumber ? contact.color : cs.onSurfaceVariant,
-                      fontWeight: hasNumber ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: hasNumber
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: hasNumber ? 15 : 13,
-                      fontStyle: hasNumber ? FontStyle.normal : FontStyle.italic,
+                      fontStyle: hasNumber
+                          ? FontStyle.normal
+                          : FontStyle.italic,
                     ),
                   ),
-                  Text(contact.subtitle, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                  Text(
+                    contact.subtitle,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
                 ],
               ),
             ),
             IconButton(
               onPressed: onEdit,
-              icon: Icon(Icons.edit_rounded, size: 18, color: cs.onSurfaceVariant),
+              icon: Icon(
+                Icons.edit_rounded,
+                size: 18,
+                color: cs.onSurfaceVariant,
+              ),
               tooltip: 'Edit number',
             ),
-            if (hasNumber) Icon(Icons.call_rounded, color: contact.color, size: 20),
+            if (hasNumber)
+              Icon(Icons.call_rounded, color: contact.color, size: 20),
           ],
         ),
       ),
