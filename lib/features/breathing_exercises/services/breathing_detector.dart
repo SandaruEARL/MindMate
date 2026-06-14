@@ -1,31 +1,39 @@
-import 'package:mindmate/core/constants/breathing_content.dart';
+// services/breathing_detector.dart
+// Detects which breathing exercise the user wants to start.
+// Pure Dart — no Flutter imports.
+
+import 'package:mindmate/features/breathing_exercises/services/breathing_faq_corpus.dart';
 
 class BreathingDetector {
-  /// Scans the given text for keywords related to a specific breathing exercise.
-  /// Returns the exercise ID if a match is found, otherwise null.
+  BreathingDetector._();
+
+  /// Returns an exercise ID if the text matches an exercise name, otherwise null.
   static String? detectExerciseIntent(String text) {
     final t = text.toLowerCase();
-    
-    // Box Breathing
-    if (t.contains('box') || t.contains('square breathing') || t.contains('tactical breathing')) {
-      return BreathingCorpus.idBox;
+
+    if (t.contains('box') ||
+        t.contains('square breathing') ||
+        t.contains('tactical breathing')) {
+      return BreathingFaqCorpus.idBox;
     }
-    
-    // 4-7-8 Breathing
-    if (t.contains('4 7 8') || t.contains('four seven eight') || t.contains('478')) {
-      return BreathingCorpus.id478;
+
+    if (t.contains('4 7 8') ||
+        t.contains('four seven eight') ||
+        t.contains('478') ||
+        t.contains('4-7-8')) {
+      return BreathingFaqCorpus.id478;
     }
-    
-    // Deep Belly Breathing
+
     if (t.contains('deep') || t.contains('belly')) {
-      return BreathingCorpus.idDeep;
+      return BreathingFaqCorpus.idDeep;
     }
-    
-    // Body Scan Relaxation
-    if (t.contains('body scan') || t.contains('scan relaxation') || t.contains('scan')) {
-      return BreathingCorpus.idBodyScan;
+
+    if (t.contains('body scan') ||
+        t.contains('scan relaxation') ||
+        t.contains('body awareness')) {
+      return BreathingFaqCorpus.idBodyScan;
     }
-    
+
     return null;
   }
 }
