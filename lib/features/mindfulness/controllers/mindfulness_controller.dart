@@ -370,8 +370,8 @@ class MindfulnessController extends ChangeNotifier {
     if (text.contains('what is anxiety') || text.contains('how to manage anxiety') || text.contains('help with anxiety')) {
       await speakConversationalResponse(
         'Anxiety is a natural response to stress, but it can feel overwhelming. '
-        'You can manage it by taking slow, deep breaths, grounding yourself in the present, or doing our Anxiety Reduction meditation. '
-        'Would you like me to start the Anxiety Reduction meditation for you now?',
+        'You can manage it by taking slow, deep breaths, grounding yourself in the present, or doing our Beginner Meditation. '
+        'Would you like me to start the Beginner Meditation for you now?',
       );
       return;
     }
@@ -394,7 +394,7 @@ class MindfulnessController extends ChangeNotifier {
     }
     if (text.contains('what can i say') || text.contains('features') || text.contains('how does this work') || text.contains('help')) {
       await speakConversationalResponse(
-        'You can say, "Start Anxiety Reduction", "Start Loving Kindness", "Start Focus", "Start Gratitude", "Start Mindful Observation", or "Start Beginner Meditation". '
+        'You can say, "Start Loving Kindness", "Start Focus", "Start Gratitude", "Start Mindful Observation", or "Start Beginner Meditation". '
         'You can also ask questions like, "What is mindfulness?", "How do I manage anxiety?", or say "Go back". '
         'What would you like to do now?',
       );
@@ -479,7 +479,7 @@ class MindfulnessController extends ChangeNotifier {
         await runBeginnerMeditation();
       } else {
         await speakConversationalResponse(
-          'I did not catch which session you want. You can say Loving Kindness, Anxiety Reduction, Focus, Gratitude, Mindful Observation, or Beginner Meditation.',
+          'I did not catch which session you want. You can say Loving Kindness, Focus, Gratitude, Mindful Observation, or Beginner Meditation.',
         );
       }
       return;
@@ -494,11 +494,11 @@ class MindfulnessController extends ChangeNotifier {
         text.contains('worry') || text.contains('worried')) {
       detectedEmotion = 'anxiety';
       currentState = 'awaiting_session_confirmation';
-      recommendedSession = 'anxiety_reduction';
+      recommendedSession = 'beginner';
       notifyListeners();
       await speakConversationalResponse(
         'I hear that you are feeling anxious. '
-        'The Anxiety Reduction guided meditation is designed to calm your nervous system step by step through slow breathing and release exercises. '
+        'Beginner Meditation is a great way to calm your nervous system step by step through slow breathing and release exercises. '
         'Would you like me to start it for you?',
       );
       return;
@@ -678,12 +678,12 @@ class MindfulnessController extends ChangeNotifier {
         notifyListeners();
         await speakConversationalResponse(
           'Mindfulness and meditation can help calm your nervous system. '
-          'We have sessions like Beginner Meditation, Focus, Loving Kindness, Gratitude, Anxiety Reduction, and Mindful Observation. '
+          'We have sessions like Beginner Meditation, Focus, Loving Kindness, Gratitude, and Mindful Observation. '
           'Which session would you like to start?',
         );
         return;
       } else if (text.contains('anxiety')) {
-        await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Anxiety Reduction meditation?');
+        await speakConversationalResponse('Anxiety is a natural response to stress. You can manage it by taking slow, deep breaths. Would you like to try the Beginner Meditation?');
       } else if (text.contains('stress')) {
         await speakConversationalResponse('Stress is how your body responds to pressures. You can manage it by taking deep breaths. Would you like to try a meditation?');
       } else {

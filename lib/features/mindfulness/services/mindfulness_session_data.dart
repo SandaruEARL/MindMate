@@ -31,13 +31,6 @@ final List<Map<String, dynamic>> kGuidedMeditationSessions = [
     'duration': const Duration(minutes: 5),
   },
   {
-    'title': 'Anxiety Reduction',
-    'subtitle': '5 min · Calm panic and release stress',
-    'icon': Icons.healing_rounded,
-    'color': const Color(0xFFFF7043),
-    'duration': const Duration(minutes: 5),
-  },
-  {
     'title': 'Focus & Concentration',
     'subtitle': '5 min · Sharpen mind and awareness',
     'icon': Icons.center_focus_strong_rounded,

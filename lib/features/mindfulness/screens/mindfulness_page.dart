@@ -258,9 +258,6 @@ class _MindfulnessPageState extends State<MindfulnessPage>
                                   case 'Beginner Meditation':
                                     _ctrl.runBeginnerMeditation();
                                     break;
-                                  case 'Anxiety Reduction':
-                                    _ctrl.runAnxietyReduction();
-                                    break;
                                   case 'Focus & Concentration':
                                     _ctrl.runFocusConcentration();
                                     break;
