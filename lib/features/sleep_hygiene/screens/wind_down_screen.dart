@@ -19,6 +19,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../core/services/speech_to_text_service.dart';
 import '../../../core/services/tts_service.dart';
 
 // ── Step model ─────────────────────────────────────────────────────────────────
@@ -96,6 +97,8 @@ class _WindDownScreenState extends State<WindDownScreen>
   int  _stepIndex   = 0;
   int  _secondsLeft = _kSteps[0].durationSeconds;
   bool _isDone      = false;
+  bool _continuousListening = false;
+  final SpeechToTextService _sttService = SpeechToTextService();
 
   Timer?                  _timer;
   late AnimationController _ringCtrl;
@@ -109,6 +112,8 @@ class _WindDownScreenState extends State<WindDownScreen>
   @override
   void initState() {
     super.initState();
+
+    _sttService.initialise();
 
     _ringCtrl = AnimationController(
       vsync:    this,
@@ -126,6 +131,7 @@ class _WindDownScreenState extends State<WindDownScreen>
 
     _startTimer();
     _narrate();
+    _startContinuousListening();
   }
 
   void _startTimer() {
@@ -140,8 +146,45 @@ class _WindDownScreenState extends State<WindDownScreen>
   }
 
   Future<void> _narrate() async {
+    _continuousListening = false;
     await widget.ttsService.speak(_step.narration);
+    await widget.ttsService.awaitCompletion();
+    _continuousListening = true;
+    _startContinuousListening();
   }
+
+  Future<void> _startContinuousListening() async {
+    _continuousListening = true;
+    while (_continuousListening && mounted) {
+      try {
+        final result = await _sttService.listen();
+        final text = result.toLowerCase();
+        if (!mounted) break;
+
+        if (text.contains('skip') || text.contains('next')) {
+          if (_stepIndex < _kSteps.length - 1) {
+            await widget.ttsService.speak('Skipping to next step.');
+            await widget.ttsService.awaitCompletion();
+            _advanceStep();
+          }
+        } else if (text.contains('stop') || text.contains('exit') ||
+            text.contains('close') || text.contains('back')) {
+          await widget.ttsService.speak('Exiting bedtime routine.');
+          await widget.ttsService.awaitCompletion();
+          if (mounted) Navigator.pop(context);
+          break;
+        } else if (text.contains('repeat') || text.contains('again')) {
+          await widget.ttsService.speak('Repeating this step.');
+          await widget.ttsService.awaitCompletion();
+          _narrate();
+        }
+      } catch (_) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
+  }
+
+
 
   // ── Step advance ───────────────────────────────────────────────────────────
 
@@ -180,6 +223,7 @@ class _WindDownScreenState extends State<WindDownScreen>
     _ringCtrl.dispose();
     _pulseCtrl.dispose();
     widget.ttsService.stop();
+    _continuousListening = false;
     super.dispose();
   }
 

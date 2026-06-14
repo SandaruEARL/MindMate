@@ -42,11 +42,12 @@ class _MindfulnessChatLogState extends State<MindfulnessChatLog> {
     return Container(
       height: 250,
       margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLowest.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+        border: Border.symmetric(
+          horizontal: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,30 +75,62 @@ class _MindfulnessChatLogState extends State<MindfulnessChatLog> {
               itemCount: widget.chatHistory.length,
               itemBuilder: (context, index) {
                 final msg = widget.chatHistory[widget.chatHistory.length - 1 - index];
-                return Align(
-                  alignment:
-                      msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: msg.isUser
-                          ? accent.withOpacity(0.15)
-                          : cs.surfaceContainerHighest.withOpacity(0.6),
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(12),
-                        topRight: const Radius.circular(12),
-                        bottomLeft: Radius.circular(msg.isUser ? 12 : 4),
-                        bottomRight: Radius.circular(msg.isUser ? 4 : 12),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Row(
+                    mainAxisAlignment: msg.isUser
+                        ? MainAxisAlignment.end
+                        : MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!msg.isUser) ...[
+                        CircleAvatar(
+                          backgroundColor: accent.withOpacity(0.15),
+                          radius: 16,
+                          child: Icon(Icons.auto_awesome, color: accent, size: 16),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: msg.isUser ? accent : accent.withOpacity(0.08),
+                            borderRadius: BorderRadius.only(
+                              topLeft: const Radius.circular(20),
+                              topRight: const Radius.circular(20),
+                              bottomLeft: Radius.circular(msg.isUser ? 20 : 4),
+                              bottomRight: Radius.circular(msg.isUser ? 4 : 20),
+                            ),
+                          ),
+                          child: Text(
+                            msg.text,
+                            style: TextStyle(
+                              color: msg.isUser
+                                  ? Colors.white
+                                  : cs.onSurface,
+                              fontSize: 15,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      msg.text,
-                      style: TextStyle(fontSize: 13, color: cs.onSurface),
-                    ),
+                      if (msg.isUser) ...[
+                        const SizedBox(width: 12),
+                        CircleAvatar(
+                          backgroundColor: cs.surfaceContainerHighest,
+                          radius: 16,
+                          child: Icon(
+                            Icons.person,
+                            color: cs.onSurfaceVariant,
+                            size: 18,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 );
               },

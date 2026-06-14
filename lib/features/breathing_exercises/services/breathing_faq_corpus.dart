@@ -19,6 +19,11 @@ enum BreathingFaqIntent {
   suggestForPanic,
   emergencyRedirect,
   unknown,
+  bestTime, //new
+  isSafe,
+  whatToFocusOn,
+  whileSitting,
+  improveConcentration,
 }
 
 class BreathingFaqResponse {
@@ -67,13 +72,16 @@ class BreathingFaqCorpus {
     'passing out',
     'crisis',
     'help me now',
-    'call 911',
+    'call',
+    '119',
+    '1990',
     'ambulance',
   ];
 
   // ── FAQ keyword map ───────────────────────────────────────────
   static const Map<BreathingFaqIntent, List<String>> faqKeywords = {
     BreathingFaqIntent.whatIsBreathing: [
+      //Q1
       'what are breathing exercises',
       'what is breathing exercise',
       'what is a breathing exercise',
@@ -86,8 +94,60 @@ class BreathingFaqCorpus {
       'what is breathing',
     ],
 
+    BreathingFaqIntent.whatIsGuidedRelaxation: [
+      //Q2
+      'what is guided relaxation',
+      'what is guided meditation', //open meditation
+      'explain guided relaxation',
+      'tell me about guided relaxation',
+      'what is relaxation technique',
+      'what are relaxation techniques',
+      'how does guided relaxation work',
+    ],
+
+    BreathingFaqIntent.howOften: [
+      //Q3
+      'how often should i practice',
+      'how often should i do breathing',
+      'how many times a day',
+      'how frequently',
+      'daily practice',
+      'how long should i practice',
+      'how many minutes',
+      'regular practice',
+      'how often',
+    ],
+
+    BreathingFaqIntent.bestTime: [
+      //Q4
+      'when is the best time',
+      'best time to practice',
+      'when should i practice',
+      'when to do breathing exercises',
+      'what time should i practice',
+      'morning breathing',
+      'before sleep breathing',
+      'when to practice breathing',
+      'best time for breathing',
+      'when to breathe',
+    ],
+
+    BreathingFaqIntent.isSafe: [
+      //Q5
+      'are breathing exercises safe',
+      'is breathing exercise safe',
+      'safe for everyone',
+      'is it safe to do breathing exercises',
+      'can everyone do breathing exercises',
+      'breathing exercise side effects',
+      'is deep breathing safe',
+      'breathing exercises dangerous',
+      'who should not do breathing exercises',
+      'any risks',
+    ],
+
     BreathingFaqIntent.mentalHealthBenefits: [
-      'how do breathing exercises help mental health',
+      'how do breathing exercises help mental health', //*
       'breathing and mental health',
       'breathing for mental health',
       'mental health benefits of breathing',
@@ -101,30 +161,8 @@ class BreathingFaqCorpus {
       'does it help my mind',
     ],
 
-    BreathingFaqIntent.whatIsGuidedRelaxation: [
-      'what is guided relaxation',
-      'what is guided meditation',
-      'explain guided relaxation',
-      'tell me about guided relaxation',
-      'what is relaxation technique',
-      'what are relaxation techniques',
-      'how does guided relaxation work',
-    ],
-
-    BreathingFaqIntent.howOften: [
-      'how often should i practice',
-      'how often should i do breathing',
-      'how many times a day',
-      'how frequently',
-      'daily practice',
-      'how long should i practice',
-      'how many minutes',
-      'regular practice',
-      'how often',
-    ],
-
     BreathingFaqIntent.anxietyPanic: [
-      'can breathing exercises help during anxiety',
+      'can breathing exercises help during anxiety', //**
       'can breathing help anxiety',
       'breathing for anxiety',
       'breathing for panic',
@@ -208,11 +246,34 @@ class BreathingFaqCorpus {
 
   // ── FAQ answers ───────────────────────────────────────────────
   static const Map<BreathingFaqIntent, String> faqAnswers = {
-    BreathingFaqIntent.whatIsBreathing:
+    BreathingFaqIntent.whatIsBreathing: //Q1
         'Breathing exercises are simple techniques that help you control and '
         'slow down your breathing. They reduce stress, improve focus, and help '
         'you feel calmer. Techniques like Box Breathing and 4-7-8 give your '
         'body a structured way to activate its natural relaxation response.',
+
+    BreathingFaqIntent.whatIsGuidedRelaxation: //Q2
+        'Guided relaxation is a technique where you follow spoken instructions '
+        'to relax your mind and body step by step. This app walks you through '
+        'breathing patterns and body awareness to help reduce tension. '
+        'Body Scan Relaxation is a great example you can try here.',
+
+    BreathingFaqIntent.howOften: //Q3
+        'Even 5 to 10 minutes of breathing practice each day can make a real '
+        'difference. Short daily sessions build the habit and make it easier '
+        'to use these techniques when you need them. '
+        'Consistency matters more than duration.',
+
+    BreathingFaqIntent.bestTime: //Q4
+        'You can practice breathing exercises at any time. '
+        'Many people find them helpful in the morning to start the day calmly, '
+        'before sleep to wind down, or during stressful situations '
+        'when you need a quick reset.',
+
+    BreathingFaqIntent.isSafe: //Q5
+        'Breathing exercises are generally safe for most people. '
+        'However, if you have a respiratory condition or feel dizzy while '
+        'practicing, stop and consult a healthcare professional before continuing.',
 
     BreathingFaqIntent.mentalHealthBenefits:
         'Breathing exercises calm your nervous system directly. When you breathe '
@@ -220,18 +281,6 @@ class BreathingFaqCorpus {
         'and your body shifts into a calmer state. '
         'Regular practice can reduce anxiety, lift mood, and help you feel more '
         'in control of your emotions.',
-
-    BreathingFaqIntent.whatIsGuidedRelaxation:
-        'Guided relaxation is a technique where you follow spoken instructions '
-        'to relax your mind and body step by step. This app walks you through '
-        'breathing patterns and body awareness to help reduce tension. '
-        'Body Scan Relaxation is a great example you can try here.',
-
-    BreathingFaqIntent.howOften:
-        'Even 5 to 10 minutes of breathing practice each day can make a real '
-        'difference. Short daily sessions build the habit and make it easier '
-        'to use these techniques when you need them. '
-        'Consistency matters more than duration.',
 
     BreathingFaqIntent.anxietyPanic:
         'Yes, breathing exercises are one of the fastest tools during anxiety '

@@ -7,13 +7,6 @@ import 'package:flutter/material.dart';
 
 final List<Map<String, dynamic>> kMindfulnessSessions = [
   {
-    'title': 'Body Scan',
-    'subtitle': '5 min · Full-body awareness',
-    'icon': Icons.accessibility_new_rounded,
-    'color': const Color(0xFF9C6FDE),
-    'duration': const Duration(minutes: 5),
-  },
-  {
     'title': 'Mindful Observation',
     'subtitle': '3 min · Focus on the present',
     'icon': Icons.visibility_rounded,
@@ -35,13 +28,6 @@ final List<Map<String, dynamic>> kGuidedMeditationSessions = [
     'subtitle': '5 min · Focus on breathing basics',
     'icon': Icons.spa_rounded,
     'color': const Color(0xFF42A5F5),
-    'duration': const Duration(minutes: 5),
-  },
-  {
-    'title': 'Anxiety Reduction',
-    'subtitle': '5 min · Calm panic and release stress',
-    'icon': Icons.healing_rounded,
-    'color': const Color(0xFFFF7043),
     'duration': const Duration(minutes: 5),
   },
   {
